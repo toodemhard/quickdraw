@@ -1,60 +1,56 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="src/output.css" />
-        <title>idk</title>
-    </head>
 
-    <style>
-        #brightness {
-            background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
-        }
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="src/output.css" />
+    <title>idk</title>
+</head>
 
-        #hue {
-            background-image: linear-gradient(90deg, white, blue);
-        }
+<style>
+    #brightness {
+        background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
+    }
 
-        #hue-slider {
-            background-image: linear-gradient(
-                90deg,
+    #saturation {
+        background-image: linear-gradient(90deg, white, blue);
+    }
+
+    #hue-slider {
+        background-image: linear-gradient(90deg,
                 rgb(255, 0, 0),
                 rgb(255, 255, 0),
                 rgb(0, 255, 0),
                 rgb(0, 255, 255),
                 rgb(0, 0, 255),
                 rgb(255, 0, 255),
-                rgb(255, 0, 0)
-            );
-        }
-    </style>
+                rgb(255, 0, 0));
+    }
+</style>
 
-    <body>
-        <input id="scale-slider" type="range" style="display: block" />
-        <output id="scale-output"></output>
-        <p>scale: <output></output></p>
+<body>
+    <input id="scale-slider" type="range" style="display: block" />
+    <output id="scale-output"></output>
+    <p>scale: <output></output></p>
 
-        <div class="flex">
-            <canvas
-                id="canvas"
-                width="1024"
-                height="768"
-                class="border-2 border-black"
-            ></canvas>
-            <div class="flex flex-col gap-3.5">
-                <div class=" w-72 h-72 relative rounded-sm">
-                    <div id="hue" class="w-full h-full absolute"></div>
-                    <div
-                        id="brightness"
-                        class="w-full h-full absolute"
-                        ></div>
+    <div class="flex">
+        <canvas id="canvas" width="1024" height="768" class="border-2 border-black"></canvas>
+        <div id="color-picker" class="flex flex-col gap-3.5">
+            <div class="w-72 h-72 relative rounded-sm">
+                <div id="saturation" class="w-full h-full absolute"></div>
+                <div id="brightness" class="w-full h-full absolute"></div>
+                <div id="pointer" class="absolute w-2 h-2 rounded-full">
+                    x
                 </div>
-
-                <div id="hue-slider" class="w-72 h-8"></div>
             </div>
-        </div>
 
-        <script type="module" src="/src/main.ts"></script>
-    </body>
+            <div id="hue-slider" class="w-72 h-8"></div>
+        </div>
+        <div id="hex-output">idk</div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

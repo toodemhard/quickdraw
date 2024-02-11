@@ -1,7 +1,8 @@
-import { wtf } from "./color";
+// import "color.ts"
+import "./color.ts"
 
 function drawEvent(e: PointerEvent) {
-    // console.log(`${e.offsetX}, ${e.offsetY}`);
+    // console.log(`${e.x}, ${e.y}`);
     // interp({ x: e.x, y: e.y });
     circleBrush({ x: e.offsetX, y: e.offsetY }, e.pressure);
     // if (ctx) {
@@ -11,23 +12,11 @@ function drawEvent(e: PointerEvent) {
 
 let setint: number;
 
-function onMouseDown(e: PointerEvent) {
-    lastPoint = { x: e.offsetX, y: e.offsetY };
-    setint = setInterval(function () {
-        drawEvent(idk);
-    }, 1);
-}
-
-function onMouseUp() {
-    console.log("up");
-    clearInterval(setint);
-}
 
 function circleBrush(pos: Vector, pressure: number) {
-    console.log(pressure);
-    // if (ctx) {
-    //   ctx.fillStyle = "rgb(0 255 255)"
-    // }
+    if (ctx) {
+        ctx.fillStyle = "rgb(0 0 0)"
+    }
 
     ctx?.beginPath();
     ctx?.arc(pos.x, pos.y, scale * pressure, 0, Math.PI * 2);
@@ -57,12 +46,8 @@ let lastPoint: Vector = { x: 0, y: 0 };
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
-const scaleSlider = document.getElementById("scale-slider") as HTMLInputElement;
-const output = document.getElementById("scale-output");
 
-let scale = 0;
-
-document.addEventListener("keydown", function (e) {
+document.addEventListener("keydown", function(e) {
     if (e.key == "[") {
         changeScale(scale - 5);
     }
@@ -85,30 +70,15 @@ function changeScale(value: number) {
         scaleSlider.value = String(value);
     }
 }
+const scaleSlider = document.getElementById("scale-slider") as HTMLInputElement;
+const output = document.getElementById("scale-output");
 
-scaleSlider.oninput = function () {
+let scale = 10;
+
+
+scaleSlider.oninput = function() {
     console.log(scaleSlider.value);
     changeScale(Number(scaleSlider.value));
 };
 
-if (ctx) {
-    ctx.lineWidth = 2;
-}
-
-// canvas.addEventListener("mousemove", drawEvent);
-// canvas.addEventListener("pointerdown", onMouseDown);
-// canvas.addEventListener("pointerup", onMouseUp);
-// canvas.addEventListener("pointerleave", onMouseUp);
-// ctx?.arc(50, 50, 20, 0, Math.PI * 2);
-// ctx?.fill();
-// console.log("jkadsjhf");
-
-let idk: PointerEvent;
-
-canvas.onpointermove = function (e: PointerEvent) {
-    if (e.pressure > 0) {
-        drawEvent(e);
-    }
-};
-
-wtf();
+canvas.addEventListener("pointermove", drawEvent);
