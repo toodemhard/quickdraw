@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="src/output.css" />
+    <link rel="stylesheet" href="static/output.css" />
     <title>idk</title>
 </head>
 
@@ -32,15 +32,15 @@
 <body>
     <input id="scale-slider" type="range" style="display: block" />
     <output id="scale-output"></output>
-    <p>scale: <output></output></p>
+    <p class="select-none">scale: <output></output></p>
 
     <div class="flex">
         <canvas id="canvas" width="1024" height="768" class="border-2 border-black"></canvas>
         <div id="color-picker" class="flex flex-col gap-3.5">
-            <div class="w-72 h-72 relative rounded-sm">
+            <div class="select-none w-72 h-72 relative rounded-sm">
                 <div id="saturation" class="w-full h-full absolute"></div>
                 <div id="brightness" class="w-full h-full absolute"></div>
-                <div id="pointer" class="absolute w-2 h-2 rounded-full">
+                <div id="pointer" class="select-none absolute w-2 h-2 rounded-full">
                     x
                 </div>
             </div>

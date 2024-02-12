@@ -3,9 +3,9 @@ function clamp(number: number, min: number, max: number) {
 }
 
 class HSV {
-    h: number
-    s: number
-    v: number
+    h: number;
+    s: number;
+    v: number;
 
     constructor(h: number, s: number, v: number) {
         this.h = h;
@@ -15,14 +15,24 @@ class HSV {
 }
 
 class RGB {
-    r: number
-    g: number
-    b: number
+    r: number;
+    g: number;
+    b: number;
 
     constructor(r: number, g: number, b: number) {
         this.r = r;
         this.g = g;
         this.b = b;
+    }
+}
+
+class Vec {
+    x: number;
+    y: number;
+
+    constructor(x: number, y: number) {
+        this.x = x;
+        this.y = y;
     }
 }
 
@@ -40,7 +50,7 @@ function HSV_to_RGB(hsv: HSV): RGB {
     const { h, s, v } = hsv;
     const c = v * s;
     const H = h / 42.5;
-    const x = c * (1 - Math.abs(H % 2 - 1));
+    const x = c * (1 - Math.abs((H % 2) - 1));
     let rgb1 = new RGB(0, 0, 0);
 
     switch (true) {
@@ -69,56 +79,54 @@ function HSV_to_RGB(hsv: HSV): RGB {
     return new RGB(r1 + m, g1 + m, b1 + m);
 }
 
-let pointerPos: PointerEvent;
+function updateUI(colorPicker: HTMLElement, e: PointerEvent) {
+    console.log("asdf");
+    const rect = colorPicker.getBoundingClientRect();
 
-document.addEventListener("pointermove", (e: PointerEvent) => {
-    pointerPos = e;
-})
+    const offsetX = e.x - rect.left;
+    const offsetY = e.y - rect.top;
 
-class ColorPickerUI {
+    const x = clamp(offsetX / colorPicker.clientWidth, 0, 1);
+    const y = clamp(1 - offsetY / colorPicker.clientWidth, 0, 1);
+    on_SV_update(x, y);
+    updatePointer(x, y);
+}
+
+export class ColorPickerUI {
+    cursorPos: Vec = new Vec(0, 0);
+    isHeld = false;
 
     constructor() {
-
         const colorPicker = document.getElementById("color-picker");
-        // const colorOutput = document.getElementById("hex-output");
-        // const hueSlider = document.getElementById("hu")
+        const hueSlider = document.getElementById("hue-slider");
+        document.addEventListener("pointermove", (e: PointerEvent) => {
+            if (this.isHeld && colorPicker) {
+                updateUI(colorPicker, e);
+            }
+        });
 
-        let setInt: number
-        colorPicker?.addEventListener("pointerdown", (e: PointerEvent) => {
-            setInt = setInterval(function() {
-                console.log("asdf");
-                pointerPos.x
-                const rect = colorPicker.getBoundingClientRect();
+        colorPicker?.addEventListener("pointerdown", () => {
+            this.isHeld = true;
+        });
 
-                // rect.top - 
+        document.addEventListener("pointerup", () => {
+            this.isHeld = false;
+        });
 
-                const x = clamp(e.offsetX / colorPicker.clientWidth, 0, 1);
-                const y = clamp(1 - e.offsetY / colorPicker.clientWidth, 0, 1);
-                on_SV_update(x, y);
-                updatePointer(x, y);
-
-            }, 20);
-
-        })
-
-        colorPicker?.addEventListener("pointerup", () => {
-            clearInterval(setInt)
-        })
+        document.addEventListener("pointerleave", () => {
+            this.isHeld = false;
+        });
     }
-
 }
 
 function on_SV_update(x: number, y: number) {
-
     const pos = new HSV(90, x, y);
-    // console.log(pos);
     const res = multiply(HSV_to_RGB(pos), 255);
 
     const colorOutput = document.getElementById("hex-output");
     if (colorOutput) {
         colorOutput.style.backgroundColor = `rgb(${res.r},${res.g},${res.b}`;
     }
-
 }
 
 function updatePointer(x: number, y: number) {
@@ -126,7 +134,6 @@ function updatePointer(x: number, y: number) {
     if (pointer) {
         pointer.style.left = `${x * 100}%`;
         pointer.style.bottom = `${y * 100}%`;
-
     }
 }
 
