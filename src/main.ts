@@ -1,7 +1,7 @@
 import App from "./app.ts";
 
-const app = new App();
-app.run();
+// const app = new App();
+App.run();
 
 // function interp(pos: Vector) {
 //     ctx?.beginPath();
