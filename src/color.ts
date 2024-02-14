@@ -104,8 +104,6 @@ class ColorPickerElements {
     pointer = document.getElementById("pointer") as HTMLElement;
 }
 
-// function onHueUpdate(): number { }
-
 //state module
 export class ColorPickerUI {
     static hsv = new HSV(0, 0, 255);
@@ -119,37 +117,38 @@ export class ColorPickerUI {
         render(elements, this.hsv);
 
         document.addEventListener("pointermove", (e: PointerEvent) => {
-            if (colorPickerHeld) {
-                const rect = elements.colorPicker.getBoundingClientRect();
-
-                const offsetX = e.x - rect.left;
-                const offsetY = e.y - rect.top;
-
-                const x = clamp(
-                    offsetX / elements.colorPicker.clientWidth,
-                    0,
-                    1,
-                );
-                const y = clamp(
-                    1 - offsetY / elements.colorPicker.clientWidth,
-                    0,
-                    1,
-                );
-
-                this.hsv.s = x * 255;
-                this.hsv.v = y * 255;
-
-                render(elements, this.hsv);
+            if (!colorPickerHeld) {
+                return;
             }
 
-            if (hueSliderHeld) {
-                let x = e.x - elements.hueSlider.getBoundingClientRect().left;
-                x /= elements.hueSlider.clientWidth;
-                x = clamp(x, 0, 1);
-                this.hsv.h = x * 255;
+            const rect = elements.colorPicker.getBoundingClientRect();
 
-                render(elements, this.hsv);
+            const offsetX = e.x - rect.left;
+            const offsetY = e.y - rect.top;
+
+            const x = clamp(offsetX / elements.colorPicker.clientWidth, 0, 1);
+            const y = clamp(
+                1 - offsetY / elements.colorPicker.clientWidth,
+                0,
+                1,
+            );
+
+            this.hsv.s = x * 255;
+            this.hsv.v = y * 255;
+
+            render(elements, this.hsv);
+        });
+
+        document.addEventListener("pointermove", (e: PointerEvent) => {
+            if (!hueSliderHeld) {
+                return;
             }
+            let x = e.x - elements.hueSlider.getBoundingClientRect().left;
+            x /= elements.hueSlider.clientWidth;
+            x = clamp(x, 0, 1);
+            this.hsv.h = x * 255;
+
+            render(elements, this.hsv);
         });
 
         const colorPicker = elements.colorPicker;
@@ -172,6 +171,7 @@ export class ColorPickerUI {
             this.hsv.h = x * 255;
 
             hueWindow.style.left = `${x * 100}%`;
+            render(elements, this.hsv)
         });
 
         document.addEventListener("pointerup", () => {
