@@ -13,9 +13,9 @@
         background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
     }
 
-    #saturation {
-        background-image: linear-gradient(90deg, white, blue);
-    }
+    /* #saturation { */
+    /*     background-image: linear-gradient(90deg, white, blue); */
+    /* } */
 
     #hue-slider {
         background-image: linear-gradient(90deg,
@@ -28,28 +28,45 @@
                 rgb(255, 0, 0));
     }
 </style>
+<!-- <input id="scale-slider" type="range" style="display: block" /> -->
+<!-- <output id="scale-output"></output> -->
+<!-- <p class="select-none">scale: <output></output></p> -->
 
-<body>
-    <input id="scale-slider" type="range" style="display: block" />
-    <output id="scale-output"></output>
-    <p class="select-none">scale: <output></output></p>
+<body class="bg-bg">
+    <div class="flex h-screen flex-col">
+        <div class="p-2 h-fit w-full bg-bg">
+            <input placeholder="Wut" class="bg-inherit text-white hover:bg-white" />
+            <h1 class="text-white">jksladfjlksajf</h1>
+        </div>
 
-    <div class="flex">
-        <canvas id="canvas" width="1024" height="768" class="border-2 border-black"></canvas>
-        <div id="color-picker" class="flex flex-col gap-3.5">
-            <div class="select-none w-72 h-72 relative rounded-sm">
-                <div id="saturation" class="w-full h-full absolute"></div>
-                <div id="brightness" class="w-full h-full absolute"></div>
-                <div id="pointer" class="select-none absolute w-2 h-2 rounded-full">
-                    x
+        <div class="flex flex-1">
+            <div id="canvas-pen" class="relative w-full">
+                <canvas id="canvas" width="800" height="600"
+                    class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black" />
+            </div>
+            <div class="right-0 h-full bg-bg p-9">
+                <div class="flex flex-col gap-3.5">
+                    <div id="output" class="h-8 rounded-md"></div>
+                    <div id="color-picker" class="relative h-72 w-72 select-none rounded-sm">
+                        <div id="saturation" class="absolute h-full w-full rounded-md"></div>
+                        <div id="brightness" class="absolute h-full w-full rounded-md"></div>
+                        <div id="pointer"
+                            class="absolute h-4 w-4 border-2 border-white select-none rounded-full -translate-x-1/2 translate-y-1/2">
+                        </div>
+                    </div>
+
+                    <div id="hue-slider" class="relative z-0 h-8 w-72 my-2 rounded-md">
+                        <div id="hue-window"
+                            class="absolute z-10 h-12 w-3 rounded-sm border-2 border-white -translate-x-1/2 top-1/2 -translate-y-1/2">
+                        </div>
+
+                    </div>
+
                 </div>
             </div>
-
-            <div id="hue-slider" class="w-72 h-8"></div>
         </div>
-        <div id="hex-output">idk</div>
     </div>
-
+    </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
 
