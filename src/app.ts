@@ -1,16 +1,19 @@
-import { ColorPickerUI } from "./color";
-import "./scale";
+import { ColorPicker } from "./color";
+import * as Draw from "./draw";
+
 
 export default class App {
     static run() {
-        ColorPickerUI.start();
+        ColorPicker.start();
 
         const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        new ColorPicker();
+
+        Draw.start();
     }
 }
 
