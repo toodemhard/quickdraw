@@ -12,10 +12,6 @@
             background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
         }
 
-        /* #saturation { */
-        /*     background-image: linear-gradient(90deg, white, blue); */
-        /* } */
-
         #hue-slider {
             background-image: linear-gradient(
                 90deg,
@@ -29,9 +25,6 @@
             );
         }
     </style>
-    <!-- <input id="scale-slider" type="range" style="display: block" /> -->
-    <!-- <output id="scale-output"></output> -->
-    <!-- <p class="select-none">scale: <output></output></p> -->
 
     <body class="bg-bg0">
         <div class="flex h-screen flex-col">
@@ -43,6 +36,7 @@
                 <h1 class="text-white">jksladfjlksajf</h1>
             </div>
 
+
             <div class="flex flex-1">
                 <div id="canvas-field" class="relative w-full">
                     <canvas
@@ -52,9 +46,13 @@
                         class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black"
                     />
                 </div>
-                <div class="right-0 h-full bg-bg0 p-9 select-none ">
+                <div class="right-0 h-full select-none bg-bg0 p-9">
                     <div class="flex flex-col gap-3.5">
-                        <div id="output" class="h-8 rounded-md" draggable="false"></div>
+                        <div
+                            id="output"
+                            class="h-8 rounded-md"
+                            draggable="false"
+                        ></div>
                         <div
                             id="color-picker"
                             class="relative h-72 w-72 select-none"
@@ -69,7 +67,7 @@
                             ></div>
                             <div
                                 id="pointer"
-                                class="absolute h-4 w-4 z-20 -translate-x-1/2 translate-y-1/2 select-none rounded-full border-2 border-white"
+                                class="absolute z-20 h-4 w-4 -translate-x-1/2 translate-y-1/2 select-none rounded-full border-2 border-white"
                             ></div>
                         </div>
 
@@ -83,11 +81,7 @@
                             ></div>
                         </div>
 
-                        <div class="flex">
-                            <button class="p-2 m-2 bg-bg1">pan</button>
-                            <button>round</button>
-                            <button>square</button>
-                            <button>erase</button>
+                        <div id="toolbox" class="flex w-72 flex-wrap">
                         </div>
                     </div>
                 </div>

@@ -34,7 +34,18 @@ class Stroke {
 }
 
 export function start() {
+    const tools = ["round", "square", "erase", "pan", "zoom"];
 
+    const toolbox = document.getElementById("toolbox")!;
+
+    let html = "";
+    tools.forEach((name) => {
+        html += `
+            <button class="m-2 bg-bg1 py-1 px-2 rounded">${name}</button>
+        `;
+    });
+
+    toolbox.innerHTML = html;
 
     const canvasField = document.getElementById("canvas-field")!;
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
