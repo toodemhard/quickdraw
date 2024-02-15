@@ -1,73 +1,98 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="static/output.css" />
+        <title>idk</title>
+    </head>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="static/output.css" />
-    <title>idk</title>
-</head>
+    <style>
+        #brightness {
+            background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
+        }
 
-<style>
-    #brightness {
-        background-image: linear-gradient(0deg, black, rgb(0, 0, 0, 0));
-    }
+        /* #saturation { */
+        /*     background-image: linear-gradient(90deg, white, blue); */
+        /* } */
 
-    /* #saturation { */
-    /*     background-image: linear-gradient(90deg, white, blue); */
-    /* } */
-
-    #hue-slider {
-        background-image: linear-gradient(90deg,
+        #hue-slider {
+            background-image: linear-gradient(
+                90deg,
                 rgb(255, 0, 0),
                 rgb(255, 255, 0),
                 rgb(0, 255, 0),
                 rgb(0, 255, 255),
                 rgb(0, 0, 255),
                 rgb(255, 0, 255),
-                rgb(255, 0, 0));
-    }
-</style>
-<!-- <input id="scale-slider" type="range" style="display: block" /> -->
-<!-- <output id="scale-output"></output> -->
-<!-- <p class="select-none">scale: <output></output></p> -->
+                rgb(255, 0, 0)
+            );
+        }
+    </style>
+    <!-- <input id="scale-slider" type="range" style="display: block" /> -->
+    <!-- <output id="scale-output"></output> -->
+    <!-- <p class="select-none">scale: <output></output></p> -->
 
-<body class="bg-bg">
-    <div class="flex h-screen flex-col">
-        <div class="p-2 h-fit w-full bg-bg">
-            <input placeholder="Wut" class="bg-inherit text-white hover:bg-white" />
-            <h1 class="text-white">jksladfjlksajf</h1>
-        </div>
-
-        <div class="flex flex-1">
-            <div id="canvas-pen" class="relative w-full">
-                <canvas id="canvas" width="800" height="600"
-                    class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black" />
+    <body class="bg-bg0">
+        <div class="flex h-screen flex-col">
+            <div class="h-fit w-full bg-bg0 p-2">
+                <input
+                    placeholder="Wut"
+                    class="bg-inherit text-white hover:bg-white"
+                />
+                <h1 class="text-white">jksladfjlksajf</h1>
             </div>
-            <div class="right-0 h-full bg-bg p-9">
-                <div class="flex flex-col gap-3.5">
-                    <div id="output" class="h-8 rounded-md"></div>
-                    <div id="color-picker" class="relative h-72 w-72 select-none rounded-sm">
-                        <div id="saturation" class="absolute h-full w-full rounded-md"></div>
-                        <div id="brightness" class="absolute h-full w-full rounded-md"></div>
-                        <div id="pointer"
-                            class="absolute h-4 w-4 border-2 border-white select-none rounded-full -translate-x-1/2 translate-y-1/2">
+
+            <div class="flex flex-1">
+                <div id="canvas-field" class="relative w-full">
+                    <canvas
+                        id="canvas"
+                        width="800"
+                        height="600"
+                        class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black"
+                    />
+                </div>
+                <div class="right-0 h-full bg-bg0 p-9 select-none ">
+                    <div class="flex flex-col gap-3.5">
+                        <div id="output" class="h-8 rounded-md" draggable="false"></div>
+                        <div
+                            id="color-picker"
+                            class="relative h-72 w-72 select-none"
+                        >
+                            <div
+                                id="saturation"
+                                class="absolute h-full w-full rounded-md"
+                            ></div>
+                            <div
+                                id="brightness"
+                                class="absolute z-10 h-full w-full rounded-md"
+                            ></div>
+                            <div
+                                id="pointer"
+                                class="absolute h-4 w-4 z-20 -translate-x-1/2 translate-y-1/2 select-none rounded-full border-2 border-white"
+                            ></div>
+                        </div>
+
+                        <div
+                            id="hue-slider"
+                            class="relative z-0 my-2 h-8 w-72 rounded-md"
+                        >
+                            <div
+                                id="hue-window"
+                                class="absolute top-1/2 z-10 h-12 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-white"
+                            ></div>
+                        </div>
+
+                        <div class="flex">
+                            <button class="p-2 m-2 bg-bg1">pan</button>
+                            <button>round</button>
+                            <button>square</button>
+                            <button>erase</button>
                         </div>
                     </div>
-
-                    <div id="hue-slider" class="relative z-0 h-8 w-72 my-2 rounded-md">
-                        <div id="hue-window"
-                            class="absolute z-10 h-12 w-3 rounded-sm border-2 border-white -translate-x-1/2 top-1/2 -translate-y-1/2">
-                        </div>
-
-                    </div>
-
                 </div>
             </div>
         </div>
-    </div>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
-</body>
-
+        <script type="module" src="/src/main.ts"></script>
+    </body>
 </html>
