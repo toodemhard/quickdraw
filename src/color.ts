@@ -24,12 +24,6 @@ class RGB {
         this.g = g;
         this.b = b;
     }
-
-    scale(scale: number) {
-        this.r *= scale;
-        this.g *= scale;
-        this.b *= scale;
-    }
 }
 
 function scale(color: RGB, scale: number): RGB {
@@ -104,27 +98,35 @@ class ColorPickerElements {
     pointer = document.getElementById("pointer") as HTMLElement;
 }
 
+export function offsetPos(
+    el: HTMLElement,
+    x: number,
+    y: number,
+): [number, number] {
+    const rect = el.getBoundingClientRect();
+    return [x - rect.left, y - rect.top];
+}
+
+const elements = new ColorPickerElements();
+
 //state module
-export class ColorPickerUI {
-    static hsv = new HSV(0, 0, 255);
+export class ColorPicker {
+    static hsv = new HSV(0, 255, 255);
+    static rgb = hsvToRGB(ColorPicker.hsv);
 
     static start() {
         let colorPickerHeld = false;
         let hueSliderHeld = false;
 
-        const elements = new ColorPickerElements();
-
         render(elements, this.hsv);
 
+        const colorPicker = elements.colorPicker;
         document.addEventListener("pointermove", (e: PointerEvent) => {
             if (!colorPickerHeld) {
                 return;
             }
 
-            const rect = elements.colorPicker.getBoundingClientRect();
-
-            const offsetX = e.x - rect.left;
-            const offsetY = e.y - rect.top;
+            const [offsetX, offsetY] = offsetPos(colorPicker, e.x, e.y);
 
             const x = clamp(offsetX / elements.colorPicker.clientWidth, 0, 1);
             const y = clamp(
@@ -133,10 +135,10 @@ export class ColorPickerUI {
                 1,
             );
 
-            this.hsv.s = x * 255;
-            this.hsv.v = y * 255;
-
-            render(elements, this.hsv);
+            let hsv = this.hsv;
+            hsv.s = x * 255;
+            hsv.v = y * 255;
+            this.updateColor(hsv);
         });
 
         document.addEventListener("pointermove", (e: PointerEvent) => {
@@ -146,32 +148,34 @@ export class ColorPickerUI {
             let x = e.x - elements.hueSlider.getBoundingClientRect().left;
             x /= elements.hueSlider.clientWidth;
             x = clamp(x, 0, 1);
-            this.hsv.h = x * 255;
 
-            render(elements, this.hsv);
+            let hsv = this.hsv;
+            hsv.h = x * 255;
+            this.updateColor(hsv);
         });
 
-        const colorPicker = elements.colorPicker;
         colorPicker.addEventListener("pointerdown", (e: PointerEvent) => {
             colorPickerHeld = true;
 
-            this.hsv.s = (e.offsetX / colorPicker.clientWidth) * 255;
-            this.hsv.v = (1 - e.offsetY / colorPicker.clientHeight) * 255;
+            const [offsetX, offsetY] = offsetPos(colorPicker, e.x, e.y);
 
-            render(elements, this.hsv);
+            let hsv = this.hsv;
+            hsv.s = (offsetX / colorPicker.clientWidth) * 255;
+            hsv.v = (1 - offsetY / colorPicker.clientHeight) * 255;
+            this.updateColor(hsv);
         });
 
         const hueSlider = elements.hueSlider;
-        const hueWindow = elements.hueWindow;
         hueSlider.addEventListener("pointerdown", (e: PointerEvent) => {
             hueSliderHeld = true;
 
-            const x = e.offsetX / hueSlider.clientWidth;
+            let offsetX = e.x - hueSlider.getBoundingClientRect().left;
+            const x = offsetX / hueSlider.clientWidth;
 
-            this.hsv.h = x * 255;
-
-            hueWindow.style.left = `${x * 100}%`;
-            render(elements, this.hsv)
+            let hsv = this.hsv;
+            hsv.h = x * 255;
+            console.log(e.offsetX, hsv.h);
+            this.updateColor(hsv);
         });
 
         document.addEventListener("pointerup", () => {
@@ -179,29 +183,15 @@ export class ColorPickerUI {
             hueSliderHeld = false;
         });
 
-        document.addEventListener("pointerleave", () => {
+        document.addEventListener("pointercancel", () => {
             colorPickerHeld = false;
             hueSliderHeld = false;
         });
     }
-}
 
-// document.addEventListener("keydown", function (e) {
-//     if (e.key == "[") {
-//         changeScale(scale - 5);
-//     }
-//     if (e.key == "]") {
-//         changeScale(scale + 5);
-//     }
-// });
-//
-// function changeScale(value: number) {
-//     value = clamp(value, 0, 500);
-//     scale = value;
-//     if (output) {
-//         output.innerText = String(value);
-//     }
-//     if (scaleSlider) {
-//         scaleSlider.value = String(value);
-//     }
-// }
+    static updateColor(hsv: HSV) {
+        this.hsv = hsv;
+        this.rgb = hsvToRGB(this.hsv);
+        render(elements, this.hsv);
+    }
+}
