@@ -1,3 +1,3 @@
-import App from "./app.ts";
+import { run } from "./app.ts";
 
-App.run();
+run();

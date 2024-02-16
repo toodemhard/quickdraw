@@ -1,4 +1,5 @@
-import { ColorPicker, offsetPos } from "./color";
+import { RGB, offsetPos } from "./color";
+import { Getter } from "./lib/reactivity";
 
 enum Tool {
     Round,
@@ -6,10 +7,6 @@ enum Tool {
     Line,
     Square,
 }
-
-class Elements { }
-
-function render(elements: Elements) { }
 
 class Vec2 {
     x: number;
@@ -33,7 +30,7 @@ class Stroke {
     }
 }
 
-export function start() {
+export function Canvas(rgb: Getter<RGB>) {
     const tools = ["round", "square", "erase", "pan", "zoom"];
 
     const toolbox = document.getElementById("toolbox")!;
@@ -51,6 +48,9 @@ export function start() {
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d")!;
 
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     let scale = 50;
 
     let canvasPos = new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2);
@@ -58,22 +58,13 @@ export function start() {
     let selectedTool = Tool.Square;
     let held = false;
 
-    ctx.lineCap = "round";
-
-    // ctx.lineJoin = "bevel";
-
-    const history: Stroke[] = [];
-    const currentStroke = new Stroke(scale, selectedTool);
-
 
     document.addEventListener("pointermove", (e: PointerEvent) => {
         if (!held) {
             return;
         }
 
-        const rgb = ColorPicker.rgb;
-        ctx.strokeStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
-        ctx.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+        ctx.strokeStyle = rgb().toString();
 
         // ctx.lineWidth = scale * e.pressure;
 
