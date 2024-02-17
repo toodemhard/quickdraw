@@ -6,6 +6,8 @@ enum Tool {
     Pan,
     Line,
     Square,
+    Pick,
+    Zoom,
 }
 
 class Vec2 {
@@ -35,10 +37,14 @@ export function Canvas(rgb: Getter<RGB>) {
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d")!;
 
+    const scaleSlider = document.getElementById(
+        "scale-slider",
+    ) as HTMLInputElement;
+
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    let scale = 50;
+    const [scale, setScale] = createSignal(50);
 
     let canvasPos = new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2);
 
@@ -46,6 +52,14 @@ export function Canvas(rgb: Getter<RGB>) {
     let held = false;
 
     const toolbox = document.getElementById("toolbox")!;
+
+    createEffect(() => {
+        scaleSlider.value = String(scale());
+    });
+
+    scaleSlider.addEventListener("input", () => {
+        setScale(Number(scaleSlider.value));
+    });
 
     createEffect(() => {
         let html = "";
@@ -58,7 +72,7 @@ export function Canvas(rgb: Getter<RGB>) {
                 selectedTool() === Number(tool) ? "selected" : "unselected";
             const id = `tool-${tool}`;
             html += `
-            <button id=${id} class="${style} m-2 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
+            <button id=${id} class="${style} m-1 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
             `;
         }
         toolbox.innerHTML = html;
@@ -100,7 +114,7 @@ export function Canvas(rgb: Getter<RGB>) {
                 ctx?.arc(
                     pointerX,
                     pointerY,
-                    (scale / 2) * e.pressure,
+                    (scale() / 2) * e.pressure,
                     0,
                     Math.PI * 2,
                 );
@@ -108,6 +122,7 @@ export function Canvas(rgb: Getter<RGB>) {
                 ctx.closePath();
                 break;
             case Tool.Square:
+                ctx.lineWidth = scale();
                 const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
                 ctx.lineTo(offsetX, offsetY);
                 ctx.stroke();
@@ -141,6 +156,15 @@ export function Canvas(rgb: Getter<RGB>) {
     document.addEventListener("keydown", (e: KeyboardEvent) => {
         if (e.ctrlKey && e.key === "z") {
             ctx.restore();
+        }
+
+        if (e.key === "[") {
+            const newScale = scale() - 5 >= 0 ? scale() - 5 : 0;
+            setScale(newScale);
+        }
+
+        if (e.key === "]") {
+            setScale(scale() + 5);
         }
 
         if (e.key === "n") {
