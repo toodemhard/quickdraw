@@ -8,3 +8,14 @@
 
 @tailwind components;
 @tailwind utilities;
+
+
+.unselected {
+  background: #323232;
+  color: white;
+}
+
+.selected {
+  background: white;
+  color: #0F0F0F;
+}

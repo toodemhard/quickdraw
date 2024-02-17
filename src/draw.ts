@@ -1,5 +1,5 @@
 import { RGB, offsetPos } from "./color";
-import { Getter } from "./lib/reactivity";
+import { Getter, createEffect, createSignal } from "./lib/reactivity";
 
 enum Tool {
     Round,
@@ -31,19 +31,6 @@ class Stroke {
 }
 
 export function Canvas(rgb: Getter<RGB>) {
-    const tools = ["round", "square", "erase", "pan", "zoom"];
-
-    const toolbox = document.getElementById("toolbox")!;
-
-    let html = "";
-    tools.forEach((name) => {
-        html += `
-            <button class="m-2 bg-bg1 py-1 px-2 rounded">${name}</button>
-        `;
-    });
-
-    toolbox.innerHTML = html;
-
     const canvasField = document.getElementById("canvas-field")!;
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d")!;
@@ -55,9 +42,39 @@ export function Canvas(rgb: Getter<RGB>) {
 
     let canvasPos = new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2);
 
-    let selectedTool = Tool.Square;
+    const [selectedTool, setTool] = createSignal(Tool.Round);
     let held = false;
 
+    const toolbox = document.getElementById("toolbox")!;
+
+    createEffect(() => {
+        let html = "";
+        for (let tool in Tool) {
+            if (isNaN(Number(tool))) {
+                continue;
+            }
+
+            const style =
+                selectedTool() === Number(tool) ? "selected" : "unselected";
+            const id = `tool-${tool}`;
+            html += `
+            <button id=${id} class="${style} m-2 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
+            `;
+        }
+        toolbox.innerHTML = html;
+
+        for (let tool in Tool) {
+            if (isNaN(Number(tool))) {
+                continue;
+            }
+
+            toolbox
+                .querySelector(`#tool-${tool}`)
+                ?.addEventListener("click", () => {
+                    setTool(Number(tool));
+                });
+        }
+    });
 
     document.addEventListener("pointermove", (e: PointerEvent) => {
         if (!held) {
@@ -65,10 +82,11 @@ export function Canvas(rgb: Getter<RGB>) {
         }
 
         ctx.strokeStyle = rgb().toString();
+        ctx.fillStyle = rgb().toString();
 
         // ctx.lineWidth = scale * e.pressure;
 
-        switch (selectedTool) {
+        switch (selectedTool()) {
             case Tool.Pan:
                 canvasPos.x += e.movementX;
                 canvasPos.y += e.movementY;
@@ -109,7 +127,7 @@ export function Canvas(rgb: Getter<RGB>) {
 
     canvasField.addEventListener("pointerdown", (e: PointerEvent) => {
         held = true;
-        switch (selectedTool) {
+        switch (selectedTool()) {
             case Tool.Pan:
                 break;
             case Tool.Square:
@@ -126,13 +144,13 @@ export function Canvas(rgb: Getter<RGB>) {
         }
 
         if (e.key === "n") {
-            selectedTool = Tool.Pan;
+            setTool(Tool.Pan);
         }
         if (e.key === "j") {
-            selectedTool = Tool.Square;
+            setTool(Tool.Square);
         }
         if (e.key === "k") {
-            selectedTool = Tool.Round;
+            setTool(Tool.Round);
         }
     });
 }
