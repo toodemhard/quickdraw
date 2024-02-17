@@ -89,15 +89,13 @@ export function offsetPos(
     return [x - rect.left, y - rect.top];
 }
 
-
 export function ColorOutput(rgb: Getter<RGB>) {
     const output = document.getElementById("output")!;
 
     createEffect(() => {
         output.style.backgroundColor = rgb().toString();
-    })
+    });
 }
-
 
 export function ColorPicker(hsv: Getter<HSV>, setHsv: Setter<HSV>) {
     let colorPickerHeld = false;
@@ -114,8 +112,7 @@ export function ColorPicker(hsv: Getter<HSV>, setHsv: Setter<HSV>) {
         pointer.style.left = `${(hsv().s / 255) * 100}%`;
         pointer.style.bottom = `${(hsv().v / 255) * 100}%`;
         hueWindow.style.left = `${(hsv().h / 255) * 100}%`;
-
-    })
+    });
 
     document.addEventListener("pointermove", (e: PointerEvent) => {
         if (!colorPickerHeld) {
@@ -125,11 +122,7 @@ export function ColorPicker(hsv: Getter<HSV>, setHsv: Setter<HSV>) {
         const [offsetX, offsetY] = offsetPos(colorPicker, e.x, e.y);
 
         const x = clamp(offsetX / colorPicker.clientWidth, 0, 1);
-        const y = clamp(
-            1 - offsetY / colorPicker.clientWidth,
-            0,
-            1,
-        );
+        const y = clamp(1 - offsetY / colorPicker.clientWidth, 0, 1);
 
         let newHsv = hsv();
         newHsv.s = x * 255;
@@ -183,4 +176,3 @@ export function ColorPicker(hsv: Getter<HSV>, setHsv: Setter<HSV>) {
         hueSliderHeld = false;
     });
 }
-
