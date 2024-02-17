@@ -46,9 +46,14 @@ export function Canvas(rgb: Getter<RGB>) {
 
     const [scale, setScale] = createSignal(50);
 
+    let stroke: Vec2[] = [];
+
+    const interpSize = 3;
+
+
     let canvasPos = new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2);
 
-    const [selectedTool, setTool] = createSignal(Tool.Round);
+    const [selectedTool, setTool] = createSignal(Tool.Square);
     let held = false;
 
     const toolbox = document.getElementById("toolbox")!;
@@ -90,6 +95,9 @@ export function Canvas(rgb: Getter<RGB>) {
         }
     });
 
+    ctx.miterLimit = 1000000;
+    ctx
+
     document.addEventListener("pointermove", (e: PointerEvent) => {
         if (!held) {
             return;
@@ -122,10 +130,25 @@ export function Canvas(rgb: Getter<RGB>) {
                 ctx.closePath();
                 break;
             case Tool.Square:
-                ctx.lineWidth = scale();
-                const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
-                ctx.lineTo(offsetX, offsetY);
+                ctx.lineWidth = scale() * e.pressure;
+                ctx.beginPath();
+                const [x, y] = offsetPos(canvas, e.x, e.y);
+                stroke.push(new Vec2(x, y));
+
+                let point = stroke[stroke.length - 1];
+                ctx.moveTo(point.x, point.y);
+
+                for (let i = 1; i < interpSize; i++) {
+                    point = stroke[stroke.length - i - 1];
+                    ctx.lineTo(point.x, point.y);
+                }
+
+
+                // console.log(point2.x - point.x, point2.y - point.y);
+
                 ctx.stroke();
+                ctx.closePath();
+
                 break;
         }
     });
@@ -136,6 +159,7 @@ export function Canvas(rgb: Getter<RGB>) {
     });
 
     document.addEventListener("pointerup", () => {
+        stroke = [];
         held = false;
         // ctx.save();
     });
@@ -147,8 +171,12 @@ export function Canvas(rgb: Getter<RGB>) {
                 break;
             case Tool.Square:
                 const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
-                ctx.beginPath();
-                ctx.moveTo(offsetX, offsetY);
+
+                // strokeStart
+
+                for (let i = 0; i < interpSize - 1; i++) {
+                    stroke.push(new Vec2(offsetX, offsetY));
+                }
                 break;
         }
     });
