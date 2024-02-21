@@ -266,24 +266,37 @@ export function Canvas(rgb: Getter<RGB>) {
         // }
     });
 
-    document.addEventListener("pointerleave", () => {
-        held = false;
-    });
+    canvasField.addEventListener("pointerleave", () => {
+        if (held) {
+            held = false;
 
-    document.addEventListener("pointerup", () => {
-        held = false;
+            while (historyPos < history.length - 1) {
+                history.pop();
+            }
 
-        while (historyPos < history.length - 1) {
-            history.pop();
+            history.push(stroke);
+            historyPos++;
+            ctx.drawImage(temp, 0, 0);
+            tempCtx.clearRect(0, 0, canvas.width, canvas.height);
         }
-
-        history.push(stroke);
-        historyPos++;
-        ctx.drawImage(temp, 0, 0);
-        tempCtx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
-    canvasField.addEventListener("pointerdown", (e: PointerEvent) => {
+    canvasField.addEventListener("pointerup", () => {
+        if (held) {
+            held = false;
+
+            while (historyPos < history.length - 1) {
+                history.pop();
+            }
+
+            history.push(stroke);
+            historyPos++;
+            ctx.drawImage(temp, 0, 0);
+            tempCtx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    });
+
+    canvasField.addEventListener("pointerdown", () => {
         held = true;
         stroke = new Stroke(scale(), rgb());
         // const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
