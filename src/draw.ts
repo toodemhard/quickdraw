@@ -157,18 +157,21 @@ export function Canvas(rgb: Getter<RGB>) {
     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d")!;
 
+    const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
+    const tempCtx = temp.getContext("2d")!;
+
     const scaleSlider = document.getElementById(
         "scale-slider",
     ) as HTMLInputElement;
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "rgb(200, 200, 200)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const [scale, setScale] = createSignal(50);
 
+    const history: Stroke[] = [];
+    let historyPos = -1;
     // let stroke: Stroke;
-
-
 
     // let canvasPos = new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2);
 
@@ -176,11 +179,14 @@ export function Canvas(rgb: Getter<RGB>) {
     Toolbox(selectedTool, setTool);
     let held = false;
 
-
     const rebuildPainting = () => {
-        ctx.fillStyle = "rgb(255,255,255)"
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-    }
+        // ctx.fillStyle = "rgb(255,255,255)";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i <= historyPos; i++) {
+            squareBrush(ctx, history[i]);
+        }
+    };
 
     createEffect(() => {
         scaleSlider.value = String(scale());
@@ -273,16 +279,27 @@ export function Canvas(rgb: Getter<RGB>) {
     });
 
     document.addEventListener("pointerup", () => {
-        stroke = new Stroke();
         held = false;
+
+        while (historyPos < history.length - 1) {
+            history.pop();
+        }
+
+        history.push(stroke);
+        historyPos++;
+        ctx.drawImage(temp, 0, 0);
+        tempCtx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
     canvasField.addEventListener("pointerdown", (e: PointerEvent) => {
         held = true;
-        const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
+        stroke = new Stroke(scale(), rgb());
+        // const [offsetX, offsetY] = offsetPos(canvas, e.x, e.y);
 
-        stroke.points.push(new Vec2(offsetX, offsetY));
-        stroke.normals.push(new Vec2(0, 0));
+        // stroke.points.push(offsetVec(canvas, e.x, e.y));
+        // stroke.normals.push(new Vec2(0, 0));
+        // stroke.pressure.push(e.pressure);
+        // lastPoint = stroke.points[0];
         // switch (selectedTool()) {
         //     case Tool.Pan:
         //         break;
@@ -303,6 +320,16 @@ export function Canvas(rgb: Getter<RGB>) {
 
         if (e.key === "]") {
             setScale(scale() + 5);
+        }
+
+        if (e.key === "u" && historyPos >= 0) {
+            historyPos--;
+            rebuildPainting();
+        }
+
+        if (e.key === "i" && historyPos < history.length - 1) {
+            historyPos++;
+            rebuildPainting();
         }
 
         if (e.key === "n") {
