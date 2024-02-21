@@ -164,9 +164,6 @@ export function Canvas(rgb: Getter<RGB>) {
         "scale-slider",
     ) as HTMLInputElement;
 
-    ctx.fillStyle = "rgb(200, 200, 200)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     const [scale, setScale] = createSignal(50);
 
     const history: Stroke[] = [];
@@ -211,11 +208,6 @@ export function Canvas(rgb: Getter<RGB>) {
         tempCtx.strokeStyle = rgb().toString();
         tempCtx.fillStyle = rgb().toString();
         squareBrush(tempCtx, stroke);
-        // ctx.strokeStyle = "black";
-        // debugNormals(ctx, stroke);
-
-        // ctx.strokeStyle = rgb().toString();
-        // ctx.fillStyle = rgb().toString();
 
         // ctx.lineWidth = scale * e.pressure;
         // switch (selectedTool()) {
