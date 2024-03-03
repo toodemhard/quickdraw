@@ -38,18 +38,20 @@
 
             <div class="flex flex-1">
                 <div id="canvas-field" class="relative w-full overflow-hidden">
-                    <canvas
-                        id="canvas"
-                        width="800"
-                        height="600"
-                        class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black"
-                    ></canvas>
-                    <canvas
-                        id="temp"
-                        width="800"
-                        height="600"
-                        class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 border-2 border-black"
-                    ></canvas>
+                    <div id="canvas-stack" class="absolute left-1/2 top-1/2">
+                        <canvas
+                            id="canvas"
+                            width="800"
+                            height="600"
+                            class="absolute box-border border-2 border-black"
+                        ></canvas>
+                        <canvas
+                            id="temp"
+                            width="800"
+                            height="600"
+                            class="absolute box-border border-2 border-red-600"
+                        ></canvas>
+                    </div>
                 </div>
                 <div class="right-0 h-full select-none bg-bg0 p-9">
                     <div class="flex flex-col gap-3.5">
