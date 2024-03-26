@@ -10,10 +10,12 @@ type navigator = (path: string) => void;
 export class Context {
     paramMap: paramMap;
     navigate: navigator;
+    root: Node;
 
-    constructor(paramMap: paramMap, navigate: navigator) {
+    constructor(paramMap: paramMap, navigate: navigator, root: Node) {
         this.paramMap = paramMap;
         this.navigate = navigate;
+        this.root = root;
     }
 
     param(param: string): string | undefined {
@@ -27,7 +29,7 @@ export function newRouter() {
 
 export class Router {
     routes: Route[] = [];
-    root: HTMLElement | undefined;
+    root: Node | undefined;
 
     notFoundView: () => void = () => {
         console.error("404");
@@ -56,14 +58,17 @@ export class Router {
                     }),
                 );
 
+                const old_root = this.root!;
+                const cleared_root = old_root.cloneNode(false);
+                old_root.parentNode!.replaceChild(cleared_root, old_root);
+                this.root = cleared_root;
                 const elements = this.routes[i].view(
-                    new Context(params, this.navigate.bind(this)),
+                    new Context(params, this.navigate.bind(this), this.root),
                 );
 
                 for (let i = 0; i < elements.length; i++) {
-                    this.root!.append(elements[i]);
+                    this.root!.appendChild(elements[i]);
                 }
-		
 
                 const links = document.getElementsByTagName("csr-link");
                 for (let i = 0; i < links.length; i++) {
@@ -88,7 +93,7 @@ export class Router {
         this.updateView();
     }
 
-    start(root: HTMLElement) {
+    start(root: Node) {
         this.root = root!;
         window.addEventListener("popstate", this.updateView.bind(this));
         this.updateView();
