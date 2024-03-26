@@ -205,7 +205,7 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
 
     canvasField.addEventListener("wheel", (e: WheelEvent) => {
         draw.onZoom(e.deltaY/5);
-    })
+    }, {passive: true});
 
     canvasField.addEventListener("keydown", (e:KeyboardEvent) => {
         switch (e.key) {
@@ -234,7 +234,6 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
 
     canvasField.addEventListener("pointerdown", () => {
         pointer_held = true;
-        console.log("dsf");
         draw.onPointerDown();
     });
 
