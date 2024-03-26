@@ -1,10 +1,10 @@
 import { HSV, clamp, hsvToRGB, offsetPos } from "./color";
-import { Drawing } from "./draw";
+import { Drawing, Tool } from "./draw";
+import { Keybinds } from "./main";
 import { Context } from "./router";
 
-export function index_view(c: Context): HTMLCollection {
-    const draw = new Drawing;
-
+export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
+    const app = document.querySelector<HTMLDivElement>("#app")!
     const template = document.createElement("template");
     template.innerHTML = `
 <div class="flex h-screen flex-col">
@@ -17,7 +17,7 @@ export function index_view(c: Context): HTMLCollection {
     <csr-link href="/settings">Settings</csr-link>
 
     <div class="flex flex-1">
-        <div id="canvas-field" class="relative w-full overflow-hidden">
+        <div id="canvas-field" class="relative w-full overflow-hidden bg-bg2">
             <div id="canvas-stack" class="absolute left-1/2 top-1/2">
                 <canvas id="canvas" width="800" height="600" class="absolute box-border border-2 border-black"></canvas>
                 <canvas id="temp" width="800" height="600" class="absolute box-border border-2 border-red-600"></canvas>
@@ -47,6 +47,9 @@ export function index_view(c: Context): HTMLCollection {
     </div>
 </div>
 `;
+
+    const draw = new Drawing;
+
     const root = template.content;
 
     let colorPickerHeld = false;
@@ -62,7 +65,7 @@ export function index_view(c: Context): HTMLCollection {
 
     const update_color_ui = (hsv: HSV) => {
         output.style.backgroundColor = hsvToRGB(hsv).toString();
-        backgroundHue.style.backgroundColor = `${hsvToRGB(new HSV(hsv.h, 255, 255))}`;
+        backgroundHue.style.backgroundColor = `${hsvToRGB({h:hsv.h, s:255, v:255})}`;
         pointer.style.left = `${(hsv.s / 255) * 100}%`;
         pointer.style.bottom = `${(hsv.v / 255) * 100}%`;
         hueWindow.style.left = `${(hsv.h / 255) * 100}%`;
@@ -75,7 +78,7 @@ export function index_view(c: Context): HTMLCollection {
 
     update_color_ui(draw.hsv);
 
-    document.addEventListener("pointermove", (e: PointerEvent) => {
+    app.addEventListener("pointermove", (e: PointerEvent) => {
         if (!colorPickerHeld) {
             return;
         }
@@ -91,7 +94,8 @@ export function index_view(c: Context): HTMLCollection {
         set_hsv(newHsv);
     });
 
-    document.addEventListener("pointermove", (e: PointerEvent) => {
+
+    app.addEventListener("pointermove", (e: PointerEvent) => {
         if (!hueSliderHeld) {
             return;
         }
@@ -127,14 +131,125 @@ export function index_view(c: Context): HTMLCollection {
         set_hsv(newHsv);
     });
 
-    document.addEventListener("pointerup", () => {
+    app.addEventListener("pointerup", () => {
         colorPickerHeld = false;
         hueSliderHeld = false;
     });
 
-    document.addEventListener("pointercancel", () => {
+    app.addEventListener("pointercancel", () => {
         colorPickerHeld = false;
         hueSliderHeld = false;
+    });
+
+    const toolbox = root.getElementById("toolbox")!;
+    let html = "";
+    for (let tool in Tool) {
+        if (isNaN(Number(tool))) {
+            continue;
+        }
+
+        const style = (draw.selectedTool === Number(tool)) ? "selected" : "unselected";
+        const id = `tool-${tool}`;
+        html += `
+        <button id=${id} class="${style} m-1 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
+        `;
+    }
+    toolbox.innerHTML = html;
+
+    const update_tools_ui = (last_selected: Tool, current_selected: Tool) => {
+        const last_button = toolbox.querySelector<HTMLButtonElement>(`#tool-${last_selected}`)!
+        last_button.className = last_button.className.replace("selected", "unselected");
+
+        const current_button = toolbox.querySelector<HTMLButtonElement>(`#tool-${current_selected}`)!
+        current_button.className = last_button.className.replace("unselected", "selected");
+    }
+
+    for (let tool in Tool) {
+        if (isNaN(Number(tool))) {
+            continue;
+        }
+
+        toolbox
+            .querySelector(`#tool-${tool}`)
+            ?.addEventListener("click", () => {
+                const new_selected = Number(tool);
+                update_tools_ui(draw.selectedTool, new_selected)
+                draw.selectedTool = new_selected;
+            });
+    }
+
+    
+    let pointer_held = false;
+
+    const canvasField = root.getElementById("canvas-field")!;
+    const canvasStack = root.getElementById("canvas-stack")!;
+
+    const canvas = root.querySelector<HTMLCanvasElement>("#canvas")!;
+    const ctx = canvas.getContext("2d")!;
+    const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
+    const tempCtx = temp.getContext("2d")!;
+
+    draw.tempCtx = tempCtx;
+    draw.ctx = ctx;
+
+    let lastPointerEvent: PointerEvent | undefined;
+
+    canvasField.addEventListener("pointermove", (e:PointerEvent) => {
+        lastPointerEvent = e;
+        if (!pointer_held) {
+            return;
+        }
+
+        draw.onPointerHeld(e, canvas);
+    });
+
+    canvasField.addEventListener("wheel", (e: WheelEvent) => {
+        draw.onZoom(e.deltaY/5);
+    })
+
+    canvasField.addEventListener("keydown", (e:KeyboardEvent) => {
+        switch (e.key) {
+            case keybinds.zoomIn:
+                console.log("fjlksadj");
+                break;
+            case keybinds.zoomOut:
+                console.log("fjlksadj");
+                break;
+        }
+
+    })
+
+    const updateCanvasUI = () => {
+        canvasStack.style.transform = `
+        scale(${draw.canvasScale}) 
+        translate(${draw.canvasPos.x - 400}px, ${draw.canvasPos.y - 300}px)
+        `;
+    }
+
+    updateCanvasUI();
+    
+    draw.canvasListeners.push(() => {
+        updateCanvasUI();
+    })
+
+    canvasField.addEventListener("pointerdown", () => {
+        pointer_held = true;
+        console.log("dsf");
+        draw.onPointerDown();
+    });
+
+    app.addEventListener("pointerup", () => {
+        if (pointer_held) {
+            pointer_held = false;
+            draw.onPointerUp(temp, ctx, tempCtx);
+        }
+    });
+
+    app.addEventListener("pointerleave", () => {
+        if (pointer_held) {
+            pointer_held = false;
+            draw.onPointerUp(temp, ctx, tempCtx);
+        }
     });
 
     return template.content.children!;

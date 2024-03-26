@@ -1,7 +1,6 @@
-import { RGB, offsetPos } from "./color";
-import { Getter, Setter, createEffect, createSignal } from "./lib/reactivity";
+import { HSV, RGB, hsvToRGB, offsetPos } from "./color";
 
-enum Tool {
+export enum Tool {
     Round,
     Pan,
     Line,
@@ -108,7 +107,6 @@ function squareBrush(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 }
 
 class Stroke {
-    // aligned vecs of data
     points: Vec2[] = [];
     normals: Vec2[] = [];
     pressure: number[] = [];
@@ -120,6 +118,20 @@ class Stroke {
         this.color = color;
     }
 }
+
+function sliceStroke(stroke: Stroke, start: number, end: number) {
+    const points = stroke.points.slice(start, end);
+    const normals = stroke.normals.slice(start, end);
+    const pressure = stroke.pressure.slice(start, end);
+
+    const newStroke = new Stroke(stroke.scale, stroke.color);
+    newStroke.points = points;
+    newStroke.normals = normals;
+    newStroke.pressure = pressure;
+
+    return newStroke;
+}
+
 
 function addPoint(stroke: Stroke, point: Vec2, pressure: number): number {
     const interpDistance = 20;
@@ -157,187 +169,236 @@ function addPoint(stroke: Stroke, point: Vec2, pressure: number): number {
     return current + 1;
 }
 
-export function Canvas(rgb: Getter<RGB>) {
-    const canvasField = document.getElementById("canvas-field")!;
-    const canvasStack = document.getElementById("canvas-stack")!;
+export class Drawing {
+    selectedTool: Tool = Tool.Square;
+    brushScale: number = 50;
+    canvasPos: Vec2 = new Vec2(0, 0);
+    canvasScale: number = 1;
+    width: number = 800;
+    height: number = 600;
+    history: Stroke[] = [];
+    historyPos = -1;
+    hsv: HSV = {h:0,s:255,v:255};
 
-    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d")!;
-    const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
-    const tempCtx = temp.getContext("2d")!;
+    stroke: Stroke | undefined;
 
-    const scaleSlider = document.getElementById(
-        "scale-slider",
-    ) as HTMLInputElement;
+    ctx: CanvasRenderingContext2D | undefined;
+    tempCtx: CanvasRenderingContext2D | undefined;
 
-    const [scale, setScale] = createSignal(50);
 
-    const [canvasPos, setCanvasPos] = createSignal(
-        new Vec2(-canvas.clientWidth / 2, -canvas.clientHeight / 2),
-    );
-    const [canvasScale, setCanvasScale] = createSignal(1);
+    lastUpdatedPoint: number = 0;
 
-    const history: Stroke[] = [];
-    let historyPos = -1;
+    canvasListeners: {(): void}[] = [];
 
-    const [selectedTool, setTool] = createSignal(Tool.Square);
-    Toolbox(selectedTool, setTool);
-    let held = false;
 
-    const rebuildPainting = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvasEvent() {
+        this.canvasListeners.forEach((listener) => {
+            listener();
+        })
+    }
 
-        for (let i = 0; i <= historyPos; i++) {
-            squareBrush(ctx, history[i]);
+    onZoom(amount: number) {
+        const currentScale = this.canvasScale;
+        this.canvasScale = currentScale + (currentScale * amount) / 100;
+        this.canvasEvent();
+    }
+
+    onPointerDown() {
+        switch (this.selectedTool) {
+            case Tool.Pan:
+                break;
+            case Tool.Square:
+                this.stroke = new Stroke(this.brushScale, hsvToRGB(this.hsv));
+            break;
         }
-    };
+    }
 
-    createEffect(() => {
-        canvasStack.style.transform = `scale(${canvasScale()}) translate(${canvasPos().x}px, ${canvasPos().y}px)`;
-    });
+    onPointerHeld(e: PointerEvent, canvas: HTMLCanvasElement) {
+        switch (this.selectedTool) {
+            case Tool.Zoom:
+                this.onZoom(e.movementY)
+                break;
+            case Tool.Pan:
+                let newPos = this.canvasPos;
+                const factor = 1 / this.canvasScale;
+                newPos.x += e.movementX * factor;
+                newPos.y += e.movementY * factor;
+                this.canvasPos = newPos;
+                this.canvasEvent();
+                break;
+            case Tool.Square:
+                if (!this.stroke || !this.tempCtx || !this.ctx) {
+                    return;
+                }
+                const point = offsetVec(canvas, e.x, e.y, this.canvasScale);
+                const updatedPoint = addPoint(this.stroke, point, e.pressure);
 
-    createEffect(() => {
-        scaleSlider.value = String(scale());
-    });
+                if (updatedPoint - this.lastUpdatedPoint > 1) {
+                    const unchangedPoints = sliceStroke(this.stroke, this.lastUpdatedPoint, updatedPoint);
+                    squareBrush(this.ctx, unchangedPoints);
+                    this.lastUpdatedPoint = updatedPoint - 1;
+                }
 
-    scaleSlider.addEventListener("input", () => {
-        setScale(Number(scaleSlider.value));
-    });
+                this.tempCtx.clearRect(0, 0, this.width, this.height);
+                const changedPoints = sliceStroke(this.stroke, updatedPoint - 1, this.stroke.points.length);
+                squareBrush(this.tempCtx, changedPoints);
 
-    let stroke: Stroke;
+                break;
+        }
+    }
 
-    document.addEventListener("pointermove", (e: PointerEvent) => {
-        if (!held) {
+    onPointerUp(temp:HTMLCanvasElement, ctx:CanvasRenderingContext2D, tempCtx:CanvasRenderingContext2D) {
+        if(this.selectedTool !== Tool.Square) {
             return;
         }
 
-        switch (selectedTool()) {
-            case Tool.Zoom:
-                const currentScale = canvasScale();
-                setCanvasScale(
-                    currentScale + (currentScale * e.movementY) / 100,
-                );
-                break;
-            case Tool.Pan:
-                let newPos = canvasPos();
-                const factor = 1 / canvasScale();
-                newPos.x += e.movementX * factor;
-                newPos.y += e.movementY * factor;
-                setCanvasPos(newPos);
-                break;
-            case Tool.Square:
-                const point = offsetVec(canvas, e.x, e.y, canvasScale());
-                const updatedPoint = addPoint(stroke, point, e.pressure);
-                tempCtx.clearRect(0, 0, canvas.width, canvas.height);
-                squareBrush(tempCtx, stroke);
-                break;
-        }
-    });
-
-    const completeStroke = () => {
-        while (historyPos < history.length - 1) {
-            history.pop();
+        if (!this.stroke) {
+            return;
         }
 
-        history.push(stroke);
-        historyPos++;
+        while (this.historyPos < this.history.length - 1) {
+            this.history.pop();
+        }
+
+        this.lastUpdatedPoint = 0;
+        this.history.push(this.stroke);
+        this.historyPos++;
         ctx.drawImage(temp, 0, 0);
-        tempCtx.clearRect(0, 0, canvas.width, canvas.height);
-    };
+        tempCtx.clearRect(0, 0, this.width, this.height);
 
-    canvasField.addEventListener("pointerleave", () => {
-        if (held) {
-            held = false;
-
-            completeStroke();
-        }
-    });
-
-    canvasField.addEventListener("pointerup", () => {
-        if (held) {
-            held = false;
-
-            completeStroke();
-        }
-    });
-
-    canvasField.addEventListener("pointerdown", () => {
-        held = true;
-
-        switch (selectedTool()) {
-            case Tool.Pan:
-                break;
-            case Tool.Square:
-                stroke = new Stroke(scale(), rgb());
-                break;
-        }
-    });
-
-    document.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "[") {
-            const newScale = scale() - 5 >= 0 ? scale() - 5 : 0;
-            setScale(newScale);
-        }
-
-        if (e.key === "]") {
-            setScale(scale() + 5);
-        }
-
-        if (e.key === "u" && historyPos >= 0) {
-            historyPos--;
-            rebuildPainting();
-        }
-
-        if (e.key === "i" && historyPos < history.length - 1) {
-            historyPos++;
-            rebuildPainting();
-        }
-
-        if (e.key === "n") {
-            setTool(Tool.Pan);
-        }
-        if (e.key === "j") {
-            setTool(Tool.Square);
-        }
-        if (e.key === "k") {
-            setTool(Tool.Round);
-        }
-
-        if (e.key === "q") {
-            rebuildPainting();
-        }
-    });
+    }
 }
 
-function Toolbox(selectedTool: Getter<Tool>, setTool: Setter<Tool>) {
-    const toolbox = document.getElementById("toolbox")!;
 
-    createEffect(() => {
-        let html = "";
-        for (let tool in Tool) {
-            if (isNaN(Number(tool))) {
-                continue;
-            }
 
-            const style =
-                selectedTool() === Number(tool) ? "selected" : "unselected";
-            const id = `tool-${tool}`;
-            html += `
-            <button id=${id} class="${style} m-1 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
-            `;
-        }
-        toolbox.innerHTML = html;
 
-        for (let tool in Tool) {
-            if (isNaN(Number(tool))) {
-                continue;
-            }
-
-            toolbox
-                .querySelector(`#tool-${tool}`)
-                ?.addEventListener("click", () => {
-                    setTool(Number(tool));
-                });
-        }
-    });
-}
+// export function Canvas() {
+//     const canvasField = document.getElementById("canvas-field")!;
+//     const canvasStack = document.getElementById("canvas-stack")!;
+//
+//     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+//     const ctx = canvas.getContext("2d")!;
+//     const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
+//     const tempCtx = temp.getContext("2d")!;
+//
+//     const scaleSlider = document.getElementById(
+//         "scale-slider",
+//     ) as HTMLInputElement;
+//
+//     Toolbox(selectedTool, setTool);
+//     let held = false;
+//
+//     const rebuildPainting = () => {
+//         ctx.clearRect(0, 0, canvas.width, canvas.height);
+//
+//         for (let i = 0; i <= historyPos; i++) {
+//             squareBrush(ctx, history[i]);
+//         }
+//     };
+//
+//     createEffect(() => {
+//         canvasStack.style.transform = `scale(${canvasScale()}) translate(${canvasPos().x}px, ${canvasPos().y}px)`;
+//     });
+//
+//     createEffect(() => {
+//         scaleSlider.value = String(scale());
+//     });
+//
+//     scaleSlider.addEventListener("input", () => {
+//         setScale(Number(scaleSlider.value));
+//     });
+//
+//     let stroke: Stroke;
+//
+//     document.addEventListener("pointermove", (e: PointerEvent) => {
+//         if (!held) {
+//             return;
+//         }
+//
+//     }
+//     });
+//
+// const completeStroke = () => {
+//     while (historyPos < history.length - 1) {
+//         history.pop();
+//     }
+//
+//     history.push(stroke);
+//     historyPos++;
+//     ctx.drawImage(temp, 0, 0);
+//     tempCtx.clearRect(0, 0, canvas.width, canvas.height);
+// };
+//
+// canvasField.addEventListener("pointerleave", () => {
+//     if (held) {
+//         held = false;
+//
+//         completeStroke();
+//     }
+// });
+//
+// canvasField.addEventListener("pointerup", () => {
+//     if (held) {
+//         held = false;
+//
+//         completeStroke();
+//     }
+// });
+//
+// canvasField.addEventListener("pointerdown", () => {
+//     held = true;
+//
+//     switch (selectedTool()) {
+//         case Tool.Pan:
+//             break;
+//         case Tool.Square:
+//             stroke = new Stroke(scale(), rgb());
+//             break;
+//     }
+// });
+//
+// document.addEventListener("keydown", (e: KeyboardEvent) => {
+//     if (e.key === "[") {
+//         const newScale = scale() - 5 >= 0 ? scale() - 5 : 0;
+//         setScale(newScale);
+//     }
+//
+//     if (e.key === "]") {
+//         setScale(scale() + 5);
+//     }
+//
+//     if (e.key === "u" && historyPos >= 0) {
+//         historyPos--;
+//         rebuildPainting();
+//     }
+//
+//     if (e.key === "i" && historyPos < history.length - 1) {
+//         historyPos++;
+//         rebuildPainting();
+//     }
+//
+//     if (e.key === "n") {
+//         setTool(Tool.Pan);
+//     }
+//
+//     if (e.key === "j") {
+//         console.log(history);
+//         setTool(Tool.Square);
+//     }
+//
+//     if (e.key === "k") {
+//         setTool(Tool.Round);
+//     }
+//
+//     if (e.key === "q") {
+//         const dataURL = canvas.toDataURL("image/png");
+//         const newTab = window.open("about:blank")!;
+//         newTab.document.write(
+//             "<img src='" + dataURL + "' alt='from canvas'/>",
+//         );
+//     }
+// });
+// }
+//
+// function Toolbox(selectedTool: Getter<Tool>, setTool: Setter<Tool>) {
+// }
