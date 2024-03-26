@@ -9,7 +9,7 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     template.innerHTML = `
 <div class="flex h-screen flex-col">
     <div class="flex w-full gap-2 p-2">
-        <button class="text-2xl">New</button>
+        <button id="new" class="text-2xl">New</button>
         <button class="text-2xl">Save</button>
         <button class="text-2xl">Open</button>
         <button class="text-2xl">Export</button>
@@ -45,12 +45,37 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
             </div>
         </div>
     </div>
+
+    <div id="create-canvas-popup" class="p-8 absolute bg-bg0 m-auto top-0 bottom-0 left-0 right-0 h-fit w-fit ">
+        <div>
+            <span>width:</span> <input type="number" class="bg-bg2"> <span>px</span>
+        </div>
+        <div>
+            <span>height:</span> <input type="number" class="bg-bg2"> <span>px</span>
+        </div>
+
+        <button class="bg-white text-bg0 p-2 px-4 rounded-full text-xl font-bold">Create</button>
+
+    </div>
 </div>
 `;
+
 
     const draw = new Drawing;
 
     const root = template.content;
+
+
+    let popupShown = false;
+
+    const createCanvasPopup = root.getElementById("create-canvas-popup")!;
+
+    const newBtn = root.getElementById("new")!;
+    newBtn.addEventListener("click", () => {
+        let visibility = popupShown ? "visible" : "hidden";
+        popupShown = !popupShown;
+        createCanvasPopup.style.visibility = visibility;
+    });
 
     let colorPickerHeld = false;
     let hueSliderHeld = false;
