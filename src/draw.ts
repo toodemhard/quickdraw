@@ -240,7 +240,7 @@ export class Drawing {
                 }
 
                 this.tempCtx.clearRect(0, 0, this.width, this.height);
-                const changedPoints = sliceStroke(this.stroke, updatedPoint - 1, this.stroke.points.length);
+                const changedPoints = sliceStroke(this.stroke, max(updatedPoint - 1, 0), this.stroke.points.length);
                 squareBrush(this.tempCtx, changedPoints);
 
                 break;
