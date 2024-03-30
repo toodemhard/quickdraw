@@ -1,6 +1,6 @@
 type Route = {
     path: string;
-    view: (context: Context) => HTMLCollection;
+    view: (context: Context) => void;
     regex: RegExp;
 };
 
@@ -35,7 +35,7 @@ export class Router {
         console.error("404");
     };
 
-    add(path: string, view: (context: Context) => HTMLCollection) {
+    add(path: string, view: (context: Context) => void) {
         const regex = new RegExp(
             "^" + path.replace(/\//g, "/").replace(/:\w+/g, "(.+)") + "$",
         );
@@ -62,13 +62,7 @@ export class Router {
                 const cleared_root = old_root.cloneNode(false);
                 old_root.parentNode!.replaceChild(cleared_root, old_root);
                 this.root = cleared_root;
-                const elements = this.routes[i].view(
-                    new Context(params, this.navigate.bind(this), this.root),
-                );
-
-                for (let i = 0; i < elements.length; i++) {
-                    this.root!.appendChild(elements[i]);
-                }
+                this.routes[i].view( new Context(params, this.navigate.bind(this), this.root),);
 
                 const links = document.getElementsByTagName("csr-link");
                 for (let i = 0; i < links.length; i++) {
@@ -82,6 +76,7 @@ export class Router {
                 return;
             }
         }
+
         this.notFoundView();
     }
 

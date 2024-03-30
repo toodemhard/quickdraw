@@ -1,13 +1,58 @@
 import { HSV, clamp, hsvToRGB, offsetPos } from "./color";
-import { Drawing, Tool } from "./draw";
-import { Keybinds } from "./main";
 import { Drawing, Editor, Tool, CanvasCtx, onPointerDown, rebuild, onPointerHeld, onZoom, onUndo, onRedo, onPointerUp } from "./draw";
+import { Action, App, Key, Keybind } from "./main";
 import { Context } from "./router";
 
-export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
-    const app = document.querySelector<HTMLDivElement>("#app")!
+function slider(onInput: (value: number) => void): Element {
     const template = document.createElement("template");
     template.innerHTML = `
+    <div id="thing" class="relative bg-bg1 w-full h-6">
+        <div id="meter" class="bg-blue-700 w-3/5 h-full">
+        <span id="slider-value" class="mx-auto table absolute left-0 right-0">50px</span>
+        </div>
+    </div>
+    `
+
+    const element = template.content.getElementById("thing")!
+
+    let rect = element.getBoundingClientRect();
+    let held = false;
+
+
+    element.addEventListener("pointerdown", (e: PointerEvent) => {
+        rect = element.getBoundingClientRect();
+        held = true;
+        onInput((e.clientX - rect.x) / element.clientWidth);
+    })
+
+    document.addEventListener("pointermove", (e:PointerEvent) => {
+        if (!held) {
+            return;
+        }
+
+        onInput((e.clientX - rect.x) / element.clientWidth);
+    })
+
+    document.addEventListener("pointerup", () => {
+        held = false;
+    })
+
+    document.addEventListener("pointerleave", () => {
+        held = false;
+    })
+    
+    return template.content.firstElementChild!;
+}
+
+export function index_view(c: Context, app : App) {
+    const root = document.querySelector<HTMLDivElement>("#app")!
+    root.focus();
+
+    const keybinds = app.keybinds;
+    const editor = app.editor
+    let drawing = app.drawing;
+
+    root.innerHTML = `
 <div class="flex h-screen flex-col">
     <div class="flex w-full gap-2 p-2">
         <button id="new" class="text-2xl">New</button>
@@ -18,10 +63,10 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     <csr-link href="/settings">Settings</csr-link>
 
     <div class="flex flex-1">
-        <div id="canvas-field" class="relative w-full overflow-hidden bg-bg2">
-            <div id="canvas-stack" class="absolute left-1/2 top-1/2">
-                <canvas id="canvas" width="800" height="600" class="absolute box-border border-2 border-black"></canvas>
-                <canvas id="temp" width="800" height="600" class="absolute box-border border-2 border-red-600"></canvas>
+        <div id="canvas-field" class="relative w-full overflow-hidden bg-bg2 cursor-cell">
+            <div id="canvas-stack" class="w-[800px] h-[600px] absolute left-1/2 top-1/2 border-[2px] border-red-600 box-content">
+                <canvas id="canvas" width="${drawing.width}" height="${drawing.height}" class="absolute"></canvas>
+                <canvas id="temp" width="${drawing.width}" height="${drawing.height}" class="absolute"></canvas>
             </div>
         </div>
         <div class="right-0 h-full select-none p-9">
@@ -35,31 +80,58 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
                         class="absolute z-20 h-4 w-4 -translate-x-1/2 translate-y-1/2 select-none rounded-full border-2 border-white">
                     </div>
                 </div>
-                <input type="range" id="scale-slider" />
                 <div id="hue-slider" class="relative z-0 my-2 h-8 w-72 rounded-md">
                     <div id="hue-window"
                         class="absolute top-1/2 z-10 h-12 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-white">
                     </div>
                 </div>
 
+                <div id=scale-slider></div>
+
                 <div id="toolbox" class="flex w-72 flex-wrap"></div>
             </div>
         </div>
     </div>
 
-    <div id="create-canvas-popup" class="p-8 absolute bg-bg0 m-auto top-0 bottom-0 left-0 right-0 h-fit w-fit ">
+    <div id="create-canvas-popup" class="invisible p-8 absolute bg-bg0 m-auto top-0 bottom-0 left-0 right-0 h-fit w-fit ">
         <div>
-            <span>width:</span> <input type="number" class="bg-bg2"> <span>px</span>
+            <span>width:</span> <input id="width" type="number" class="bg-bg2"> <span>px</span>
         </div>
         <div>
-            <span>height:</span> <input type="number" class="bg-bg2"> <span>px</span>
+            <span>height:</span> <input id="height" type="number" class="bg-bg2"> <span>px</span>
         </div>
 
-        <button class="bg-white text-bg0 p-2 px-4 rounded-full text-xl font-bold">Create</button>
+        <button id="new-drawing" class="bg-white text-bg0 p-2 px-4 rounded-full text-xl font-bold">Create</button>
 
     </div>
 </div>
-`;
+    `;
+
+
+    const setBrushSize = (value: number) => {
+        value = clamp(value, 0, maxScale);
+        editor.brushScale = value;
+        updateMeter(value);
+    }
+
+
+    const scaleInput = (fraction: number) => {
+        setBrushSize(maxScale * fraction);
+    }
+    
+    const maxScale = 100;
+    const scaleSlider = slider(scaleInput);
+
+    document.getElementById("scale-slider")!.replaceWith(scaleSlider);
+
+    
+    const updateMeter = (value: number) => {
+        document.getElementById("meter")!.style.width=`${value/maxScale * 100}%`;
+        document.getElementById("slider-value")!.innerHTML = `${Math.round(value)} px`
+    }
+    updateMeter(editor.brushScale);
+
+
     const canvasField = document.getElementById("canvas-field")!;
     const canvasStack = document.getElementById("canvas-stack")!;
 
@@ -92,13 +164,24 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
 
     let popupShown = false;
 
-    const createCanvasPopup = root.getElementById("create-canvas-popup")!;
+    const createCanvasPopup = document.getElementById("create-canvas-popup")!;
 
-    const newBtn = root.getElementById("new")!;
+    const newBtn = document.getElementById("new")!;
     newBtn.addEventListener("click", () => {
-        let visibility = popupShown ? "visible" : "hidden";
         popupShown = !popupShown;
+        let visibility = popupShown ? "visible" : "hidden";
         createCanvasPopup.style.visibility = visibility;
+    });
+
+    const widthInput = document.querySelector<HTMLInputElement>("#width")!;
+    const heightInput = document.querySelector<HTMLInputElement>("#height")!;
+
+
+    document.getElementById("new-drawing")!.addEventListener("click", () => {
+        app.drawing = new Drawing(Number(widthInput.value), Number(heightInput.value));
+        drawing = app.drawing;
+        attachDrawingListeners();
+        rebuildCanvasStack();
     });
 
     let colorPickerHeld = false;
@@ -253,17 +336,81 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
         onZoom(drawing, e.deltaY/5);
     }, {passive: true});
 
-    canvasField.addEventListener("keydown", (e:KeyboardEvent) => {
-        switch (e.key) {
-            case keybinds.zoomIn:
-                console.log("fjlksadj");
-                break;
-            case keybinds.zoomOut:
-                console.log("fjlksadj");
-                break;
+
+    const checkMods = (e: KeyboardEvent, mods: string[]): boolean => {
+        for (let i = 0; i < mods.length; i++) {
+            const mod = mods[i];
+            if (!e.getModifierState(mod)) {
+                return false;
+            }
         }
 
-    })
+        return true;
+    }
+
+    const getKeyAction = (e: KeyboardEvent, keybinds: Keybind[]): Action | null => {
+        const potentialMatches: {action: Action, mod?: string[]}[] = [];
+        for (let i = 0; i < keybinds.length; i++) {
+            const kb = keybinds[i];
+            for (let j = 0; j < kb.keys.length; j ++) {
+                const k = kb.keys[j];
+
+                if (k.modifier && !checkMods(e, k.modifier)) {
+                    continue;
+                }
+
+                if (k.key === e.key.toLowerCase()) {
+                    potentialMatches.push({action: kb.action, mod: k.modifier});
+                }
+            }
+        }
+
+        if (potentialMatches.length === 0) {
+            return null;
+        }
+        
+        let mostSpecific = 0;
+
+        for (let i = 1; i < potentialMatches.length; i++) {
+            const current = potentialMatches[i];
+            const max = potentialMatches[mostSpecific];
+            const currentModLength = (current.mod !== undefined) ? current.mod.length : 0;
+            const maxModLength = (max.mod !== undefined) ? max.mod.length : 0;
+
+            if (currentModLength > maxModLength) {
+                mostSpecific = i;
+            }
+        }
+
+        return potentialMatches[mostSpecific].action;
+    }
+
+    root.addEventListener("keydown", (e:KeyboardEvent) => {
+        const action = getKeyAction(e, app.keybinds);
+
+        if (action === null) { 
+            return;
+        }
+
+        switch (action) {
+            case Action.zoomIn:
+                break;
+            case Action.zoomOut:
+                break;
+            case Action.undo:
+                onUndo(drawing);
+                break;
+            case Action.redo:
+                onRedo(drawing);
+                break;
+            case Action.decreaseBrushSize:
+                setBrushSize(editor.brushScale - 10);
+                break;
+            case Action.increaseBrushSize: 
+                setBrushSize(editor.brushScale + 10);
+                break;
+        }
+    });
 
     const updateCanvasUI = () => {
         console.log(canvasStack);
@@ -300,7 +447,6 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
         pointerUp()
     });
 
-    return template.content.children!;
     root.addEventListener("pointerleave", () => {
         pointerUp();
     });
