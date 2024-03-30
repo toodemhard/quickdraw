@@ -169,236 +169,146 @@ function addPoint(stroke: Stroke, point: Vec2, pressure: number): number {
     return current + 1;
 }
 
-export class Drawing {
-    selectedTool: Tool = Tool.Square;
-    brushScale: number = 50;
-    canvasPos: Vec2 = new Vec2(0, 0);
-    canvasScale: number = 1;
-    width: number = 800;
-    height: number = 600;
-    history: Stroke[] = [];
-    historyPos = -1;
-    hsv: HSV = {h:0,s:255,v:255};
+class Event {
+    listeners: {(): void}[] = [];
 
-    stroke: Stroke | undefined;
+    subscribe(listener: () => void) {
+        this.listeners.push(listener);
+    }
 
-    ctx: CanvasRenderingContext2D | undefined;
-    tempCtx: CanvasRenderingContext2D | undefined;
-
-
-    lastUpdatedPoint: number = 0;
-
-    canvasListeners: {(): void}[] = [];
-
-
-    canvasEvent() {
-        this.canvasListeners.forEach((listener) => {
+    invoke() {
+        this.listeners.forEach((listener) => {
             listener();
-        })
-    }
-
-    onZoom(amount: number) {
-        const currentScale = this.canvasScale;
-        this.canvasScale = currentScale + (currentScale * amount) / 100;
-        this.canvasEvent();
-    }
-
-    onPointerDown() {
-        switch (this.selectedTool) {
-            case Tool.Pan:
-                break;
-            case Tool.Square:
-                this.stroke = new Stroke(this.brushScale, hsvToRGB(this.hsv));
-            break;
-        }
-    }
-
-    onPointerHeld(e: PointerEvent, canvas: HTMLCanvasElement) {
-        switch (this.selectedTool) {
-            case Tool.Zoom:
-                this.onZoom(e.movementY)
-                break;
-            case Tool.Pan:
-                let newPos = this.canvasPos;
-                const factor = 1 / this.canvasScale;
-                newPos.x += e.movementX * factor;
-                newPos.y += e.movementY * factor;
-                this.canvasPos = newPos;
-                this.canvasEvent();
-                break;
-            case Tool.Square:
-                if (!this.stroke || !this.tempCtx || !this.ctx) {
-                    return;
-                }
-                const point = offsetVec(canvas, e.x, e.y, this.canvasScale);
-                const updatedPoint = addPoint(this.stroke, point, e.pressure);
-
-                if (updatedPoint - this.lastUpdatedPoint > 1) {
-                    const unchangedPoints = sliceStroke(this.stroke, this.lastUpdatedPoint, updatedPoint);
-                    squareBrush(this.ctx, unchangedPoints);
-                    this.lastUpdatedPoint = updatedPoint - 1;
-                }
-
-                this.tempCtx.clearRect(0, 0, this.width, this.height);
-                const changedPoints = sliceStroke(this.stroke, max(updatedPoint - 1, 0), this.stroke.points.length);
-                squareBrush(this.tempCtx, changedPoints);
-
-                break;
-        }
-    }
-
-    onPointerUp(temp:HTMLCanvasElement, ctx:CanvasRenderingContext2D, tempCtx:CanvasRenderingContext2D) {
-        if(this.selectedTool !== Tool.Square) {
-            return;
-        }
-
-        if (!this.stroke) {
-            return;
-        }
-
-        while (this.historyPos < this.history.length - 1) {
-            this.history.pop();
-        }
-
-        this.lastUpdatedPoint = 0;
-        this.history.push(this.stroke);
-        this.historyPos++;
-        ctx.drawImage(temp, 0, 0);
-        tempCtx.clearRect(0, 0, this.width, this.height);
-
+        });
     }
 }
 
+export type CanvasCtx = {
+    main: HTMLCanvasElement;
+    mainCtx: CanvasRenderingContext2D;
+    temp: HTMLCanvasElement;
+    tempCtx: CanvasRenderingContext2D;
+}
 
+export class Drawing {
+    width: number = 800;
+    height: number = 600;
+    history: Stroke[] = [];
+    historyPos: number = -1;
+    canvasPos: Vec2 = new Vec2(0, 0);
+    canvasScale: number = 1;
 
+    historyEvent: Event = new Event;
+    canvasMoveEvent: Event = new Event;
 
-// export function Canvas() {
-//     const canvasField = document.getElementById("canvas-field")!;
-//     const canvasStack = document.getElementById("canvas-stack")!;
-//
-//     const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-//     const ctx = canvas.getContext("2d")!;
-//     const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
-//     const tempCtx = temp.getContext("2d")!;
-//
-//     const scaleSlider = document.getElementById(
-//         "scale-slider",
-//     ) as HTMLInputElement;
-//
-//     Toolbox(selectedTool, setTool);
-//     let held = false;
-//
-//     const rebuildPainting = () => {
-//         ctx.clearRect(0, 0, canvas.width, canvas.height);
-//
-//         for (let i = 0; i <= historyPos; i++) {
-//             squareBrush(ctx, history[i]);
-//         }
-//     };
-//
-//     createEffect(() => {
-//         canvasStack.style.transform = `scale(${canvasScale()}) translate(${canvasPos().x}px, ${canvasPos().y}px)`;
-//     });
-//
-//     createEffect(() => {
-//         scaleSlider.value = String(scale());
-//     });
-//
-//     scaleSlider.addEventListener("input", () => {
-//         setScale(Number(scaleSlider.value));
-//     });
-//
-//     let stroke: Stroke;
-//
-//     document.addEventListener("pointermove", (e: PointerEvent) => {
-//         if (!held) {
-//             return;
-//         }
-//
-//     }
-//     });
-//
-// const completeStroke = () => {
-//     while (historyPos < history.length - 1) {
-//         history.pop();
-//     }
-//
-//     history.push(stroke);
-//     historyPos++;
-//     ctx.drawImage(temp, 0, 0);
-//     tempCtx.clearRect(0, 0, canvas.width, canvas.height);
-// };
-//
-// canvasField.addEventListener("pointerleave", () => {
-//     if (held) {
-//         held = false;
-//
-//         completeStroke();
-//     }
-// });
-//
-// canvasField.addEventListener("pointerup", () => {
-//     if (held) {
-//         held = false;
-//
-//         completeStroke();
-//     }
-// });
-//
-// canvasField.addEventListener("pointerdown", () => {
-//     held = true;
-//
-//     switch (selectedTool()) {
-//         case Tool.Pan:
-//             break;
-//         case Tool.Square:
-//             stroke = new Stroke(scale(), rgb());
-//             break;
-//     }
-// });
-//
-// document.addEventListener("keydown", (e: KeyboardEvent) => {
-//     if (e.key === "[") {
-//         const newScale = scale() - 5 >= 0 ? scale() - 5 : 0;
-//         setScale(newScale);
-//     }
-//
-//     if (e.key === "]") {
-//         setScale(scale() + 5);
-//     }
-//
-//     if (e.key === "u" && historyPos >= 0) {
-//         historyPos--;
-//         rebuildPainting();
-//     }
-//
-//     if (e.key === "i" && historyPos < history.length - 1) {
-//         historyPos++;
-//         rebuildPainting();
-//     }
-//
-//     if (e.key === "n") {
-//         setTool(Tool.Pan);
-//     }
-//
-//     if (e.key === "j") {
-//         console.log(history);
-//         setTool(Tool.Square);
-//     }
-//
-//     if (e.key === "k") {
-//         setTool(Tool.Round);
-//     }
-//
-//     if (e.key === "q") {
-//         const dataURL = canvas.toDataURL("image/png");
-//         const newTab = window.open("about:blank")!;
-//         newTab.document.write(
-//             "<img src='" + dataURL + "' alt='from canvas'/>",
-//         );
-//     }
-// });
-// }
-//
-// function Toolbox(selectedTool: Getter<Tool>, setTool: Setter<Tool>) {
-// }
+    constructor(width: number, height: number) {
+        this.width = width;
+        this.height = height;
+    }
+}
+
+export class Editor {
+    selectedTool: Tool = Tool.Square;
+    brushScale: number = 50;
+    hsv: HSV = {h:0,s:255,v:255};
+
+    stroke: Stroke = new Stroke(0, new RGB(0,0,0))
+    lastUpdatedPoint: number = 0;
+}
+
+export function rebuild(drawing: Drawing, ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, drawing.width, drawing.height);
+
+    for (let i = 0; i <= drawing.historyPos; i++) {
+        squareBrush(ctx, drawing.history[i]);
+    }
+}
+
+export function onUndo(drawing: Drawing) {
+    if (drawing.historyPos < 0) {
+        return;
+    }
+
+    drawing.historyPos--;
+    drawing.historyEvent.invoke();
+}
+
+export function onRedo(drawing: Drawing) {
+    if (drawing.historyPos >= drawing.history.length - 1) {
+        return;
+    }
+
+    drawing.historyPos++;
+    drawing.historyEvent.invoke();
+}
+
+export function onZoom(drawing: Drawing, amount: number) {
+    const currentScale = drawing.canvasScale;
+    drawing.canvasScale = currentScale + (currentScale * amount) / 100;
+    drawing.canvasMoveEvent.invoke();
+}
+
+export function onPointerDown(editor: Editor) {
+    switch (editor.selectedTool) {
+        case Tool.Pan:
+            break;
+        case Tool.Square:
+            editor.stroke = new Stroke(editor.brushScale, hsvToRGB(editor.hsv));
+        break;
+    }
+}
+
+export function onPointerHeld(editor: Editor, drawing: Drawing, e: PointerEvent, ctx: CanvasCtx) {
+    const canvas = ctx.main;
+
+    switch (editor.selectedTool) {
+        case Tool.Zoom:
+            onZoom(drawing, e.movementY);
+            break;
+        case Tool.Pan:
+            let newPos = drawing.canvasPos;
+            const factor = 1 / drawing.canvasScale;
+            newPos.x += e.movementX * factor;
+            newPos.y += e.movementY * factor;
+            drawing.canvasPos = newPos;
+            drawing.canvasMoveEvent.invoke();
+            break;
+        case Tool.Square:
+            const rect = canvas.getBoundingClientRect();
+            const scale = drawing.canvasScale;
+            const point = new Vec2((e.x - rect.left) / scale, (e.y - rect.top) / scale);
+            const updatedPoint = addPoint(editor.stroke, point, e.pressure);
+
+            if (updatedPoint - editor.lastUpdatedPoint > 1) {
+                const unchangedPoints = sliceStroke(editor.stroke, editor.lastUpdatedPoint, updatedPoint);
+                squareBrush(ctx.mainCtx, unchangedPoints);
+                editor.lastUpdatedPoint = updatedPoint - 1;
+            }
+
+            ctx.tempCtx.clearRect(0, 0, drawing.width, drawing.height);
+            const changedPoints = sliceStroke(editor.stroke, max(updatedPoint - 1, 0), editor.stroke.points.length);
+            squareBrush(ctx.tempCtx, changedPoints);
+
+            break;
+    }
+}
+
+export function onPointerUp(editor: Editor, drawing:Drawing, ctx: CanvasCtx) {
+    if(editor.selectedTool !== Tool.Square) {
+        return;
+    }
+
+    if (!editor.stroke) {
+        return;
+    }
+
+    while (drawing.historyPos < drawing.history.length - 1) {
+        drawing.history.pop();
+    }
+
+    editor.lastUpdatedPoint = 0;
+    drawing.history.push(editor.stroke);
+    drawing.historyPos++;
+    ctx.mainCtx.drawImage(ctx.temp, 0, 0);
+    ctx.tempCtx.clearRect(0, 0, drawing.width, drawing.height);
+}

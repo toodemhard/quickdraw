@@ -1,6 +1,7 @@
 import { HSV, clamp, hsvToRGB, offsetPos } from "./color";
 import { Drawing, Tool } from "./draw";
 import { Keybinds } from "./main";
+import { Drawing, Editor, Tool, CanvasCtx, onPointerDown, rebuild, onPointerHeld, onZoom, onUndo, onRedo, onPointerUp } from "./draw";
 import { Context } from "./router";
 
 export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
@@ -59,11 +60,34 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     </div>
 </div>
 `;
+    const canvasField = document.getElementById("canvas-field")!;
+    const canvasStack = document.getElementById("canvas-stack")!;
 
+    const canvas = canvasStack.querySelector<HTMLCanvasElement>("#canvas")!;
+    const mainCtx = canvas.getContext("2d")!;
+    const temp = canvasField.querySelector<HTMLCanvasElement>("#temp")!;
+    const tempCtx = temp.getContext("2d")!;
 
-    const draw = new Drawing;
+    const rebuildCanvasStack = () => {
+        canvas.width = drawing.width;
+        canvas.height = drawing.height;
+        temp.width = drawing.width;
+        temp.height = drawing.height;
+    }
 
-    const root = template.content;
+    const attachDrawingListeners = () => {
+        drawing.historyEvent.subscribe(() => {
+            rebuild(drawing, mainCtx);
+        });
+
+        drawing.canvasMoveEvent.subscribe(() => {
+            updateCanvasUI();
+        })
+    }
+
+    attachDrawingListeners();
+
+    rebuildCanvasStack();
 
 
     let popupShown = false;
@@ -80,12 +104,12 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     let colorPickerHeld = false;
     let hueSliderHeld = false;
 
-    const output = root.getElementById("output")!;
-    const colorPicker = root.getElementById("color-picker")!;
-    const backgroundHue = root.getElementById("hue")!;
-    const hueSlider = root.getElementById("hue-slider")!;
-    const hueWindow = root.getElementById("hue-window")!;
-    const pointer = root.getElementById("pointer")!;
+    const output = document.getElementById("output")!;
+    const colorPicker = document.getElementById("color-picker")!;
+    const backgroundHue = document.getElementById("hue")!;
+    const hueSlider = document.getElementById("hue-slider")!;
+    const hueWindow = document.getElementById("hue-window")!;
+    const pointer = document.getElementById("pointer")!;
 
 
     const update_color_ui = (hsv: HSV) => {
@@ -97,13 +121,13 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     };
 
     const set_hsv = (hsv : HSV) => {
-        draw.hsv = hsv;
+        editor.hsv = hsv;
         update_color_ui(hsv)
     };
 
-    update_color_ui(draw.hsv);
+    update_color_ui(editor.hsv);
 
-    app.addEventListener("pointermove", (e: PointerEvent) => {
+    root.addEventListener("pointermove", (e: PointerEvent) => {
         if (!colorPickerHeld) {
             return;
         }
@@ -113,14 +137,14 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
         const x = clamp(offsetX / colorPicker.clientWidth, 0, 1);
         const y = clamp(1 - offsetY / colorPicker.clientWidth, 0, 1);
 
-        let newHsv = draw.hsv;
+        let newHsv = editor.hsv;
         newHsv.s = x * 255;
         newHsv.v = y * 255;
         set_hsv(newHsv);
     });
 
 
-    app.addEventListener("pointermove", (e: PointerEvent) => {
+    root.addEventListener("pointermove", (e: PointerEvent) => {
         if (!hueSliderHeld) {
             return;
         }
@@ -129,7 +153,7 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
         x /= hueSlider.clientWidth;
         x = clamp(x, 0, 1);
 
-        let newHsv = draw.hsv;
+        let newHsv = editor.hsv;
         newHsv.h = x * 255;
         set_hsv(newHsv);
     });
@@ -139,7 +163,7 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
 
         const [offsetX, offsetY] = offsetPos(colorPicker, e.x, e.y);
 
-        let newHsv = draw.hsv;
+        let newHsv = editor.hsv;
         newHsv.s = (offsetX / colorPicker.clientWidth) * 255;
         newHsv.v = (1 - offsetY / colorPicker.clientHeight) * 255;
         set_hsv(newHsv);
@@ -151,29 +175,29 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
         let offsetX = e.x - hueSlider.getBoundingClientRect().left;
         const x = offsetX / hueSlider.clientWidth;
 
-        let newHsv = draw.hsv;
+        let newHsv = editor.hsv;
         newHsv.h = x * 255;
         set_hsv(newHsv);
     });
 
-    app.addEventListener("pointerup", () => {
+    root.addEventListener("pointerup", () => {
         colorPickerHeld = false;
         hueSliderHeld = false;
     });
 
-    app.addEventListener("pointercancel", () => {
+    root.addEventListener("pointercancel", () => {
         colorPickerHeld = false;
         hueSliderHeld = false;
     });
 
-    const toolbox = root.getElementById("toolbox")!;
+    const toolbox = document.getElementById("toolbox")!;
     let html = "";
     for (let tool in Tool) {
         if (isNaN(Number(tool))) {
             continue;
         }
 
-        const style = (draw.selectedTool === Number(tool)) ? "selected" : "unselected";
+        const style = (editor.selectedTool === Number(tool)) ? "selected" : "unselected";
         const id = `tool-${tool}`;
         html += `
         <button id=${id} class="${style} m-1 bg-bg1 py-1 px-2 rounded">${Tool[tool]}</button>
@@ -198,24 +222,15 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
             .querySelector(`#tool-${tool}`)
             ?.addEventListener("click", () => {
                 const new_selected = Number(tool);
-                update_tools_ui(draw.selectedTool, new_selected)
-                draw.selectedTool = new_selected;
+                update_tools_ui(editor.selectedTool, new_selected)
+                editor.selectedTool = new_selected;
             });
     }
 
     
     let pointer_held = false;
 
-    const canvasField = root.getElementById("canvas-field")!;
-    const canvasStack = root.getElementById("canvas-stack")!;
-
-    const canvas = root.querySelector<HTMLCanvasElement>("#canvas")!;
-    const ctx = canvas.getContext("2d")!;
-    const temp = canvasField.querySelector("#temp") as HTMLCanvasElement;
-    const tempCtx = temp.getContext("2d")!;
-
-    draw.tempCtx = tempCtx;
-    draw.ctx = ctx;
+    rebuild(drawing, mainCtx);
 
     let lastPointerEvent: PointerEvent | undefined;
 
@@ -225,11 +240,17 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
             return;
         }
 
-        draw.onPointerHeld(e, canvas);
+        const thing: CanvasCtx = {
+            main: canvas,
+            mainCtx: mainCtx,
+            temp:temp,
+            tempCtx: tempCtx,
+        }
+        onPointerHeld(editor, drawing, e, thing);
     });
 
     canvasField.addEventListener("wheel", (e: WheelEvent) => {
-        draw.onZoom(e.deltaY/5);
+        onZoom(drawing, e.deltaY/5);
     }, {passive: true});
 
     canvasField.addEventListener("keydown", (e:KeyboardEvent) => {
@@ -245,36 +266,42 @@ export function index_view(c: Context, keybinds: Keybinds): HTMLCollection {
     })
 
     const updateCanvasUI = () => {
+        console.log(canvasStack);
         canvasStack.style.transform = `
-        scale(${draw.canvasScale}) 
-        translate(${draw.canvasPos.x - 400}px, ${draw.canvasPos.y - 300}px)
+        scale(${drawing.canvasScale}) 
+        translate(${drawing.canvasPos.x - 400}px, ${drawing.canvasPos.y - 300}px)
         `;
     }
 
     updateCanvasUI();
     
-    draw.canvasListeners.push(() => {
-        updateCanvasUI();
-    })
 
     canvasField.addEventListener("pointerdown", () => {
         pointer_held = true;
-        draw.onPointerDown();
+        onPointerDown(editor);
     });
 
-    app.addEventListener("pointerup", () => {
-        if (pointer_held) {
-            pointer_held = false;
-            draw.onPointerUp(temp, ctx, tempCtx);
-        }
-    });
 
-    app.addEventListener("pointerleave", () => {
+    const pointerUp = () => {
         if (pointer_held) {
             pointer_held = false;
-            draw.onPointerUp(temp, ctx, tempCtx);
+
+            const thing: CanvasCtx = {
+                main: canvas,
+                mainCtx: mainCtx,
+                temp:temp,
+                tempCtx: tempCtx,
+            }
+            onPointerUp(editor, drawing, thing);
         }
+    }
+
+    root.addEventListener("pointerup", () => {
+        pointerUp()
     });
 
     return template.content.children!;
+    root.addEventListener("pointerleave", () => {
+        pointerUp();
+    });
 }
