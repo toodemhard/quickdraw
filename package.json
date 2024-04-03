@@ -8,16 +8,18 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "style": "tailwindcss --watch -i static/input.css -o static/output.css",
-    "format": "prettier **/*.html **/*.ts --write"
+    "format": "prettier src/**/*.tsx --write"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
-    "vite": "^5.0.0"
+    "vite": "^5.2.7",
+    "vite-plugin-solid": "^2.10.2"
   },
   "dependencies": {
-    "lit-html": "^3.1.2"
+    "@solidjs/router": "^0.13.1",
+    "solid-js": "^1.8.16"
   }
 }
