@@ -1,6 +1,6 @@
 import { appContext } from "..";
 import { Key, Keybind, defaultKeybindings } from "../keybindings";
-import { For, useContext } from "solid-js";
+import { For, onCleanup, useContext } from "solid-js";
 
 const modifier_names = new Map();
 modifier_names.set("Control", "CTRL");
@@ -33,26 +33,10 @@ function KeyButton(props: { k: Key; onDelete: () => void }) {
 export default function Config() {
     const app = useContext(appContext)!;
     let keybinds = app.keybinds;
-    // const root = document.getElementById("app")!;
-    //
-    //
-    //     kb_active.keys.push({key:e.key, modifier:activeMods});
-    //     console.log(activeMods)
-    // })
-    //
-    // let kb_add = false;
-    // let kb_active: Keybind;
-    // const add_onclick = (kb: Keybind) => {
-    //     kb_add = true;
-    //     kb_active = kb;
-    // }
-    //
-    // const delete_key = (kb: Keybind, k_index: number) => {
-    //     return () => {
-    //         kb.keys.splice(k_index, 1)
-    //     }
-    // }
-    //
+
+    let controller = new AbortController();
+    let signal = controller.signal;
+
     const listenForKey = (e: KeyboardEvent, onCancel: (k?: Key) => void) => {
         console.log("still listening");
         if (e.key === "Escape") {
@@ -97,12 +81,16 @@ export default function Config() {
             listenForKey(e, onCancel)
         }
 
-        document.addEventListener("keydown", onKeyDown)
+        document.addEventListener("keydown", onKeyDown, {signal:signal});
     }
 
     const removeKey = (kb: Keybind, index: number) => {
         kb.keys.splice(index, 1);
     }
+
+    onCleanup(() => {
+        controller.abort
+    })
 
     return (
         <>
@@ -144,5 +132,4 @@ export default function Config() {
             </div>
         </>
     );
-    // <div style=${styleMap(style)} class="absolute m-auto top-0 bottom-0 left-0 right-0 w-fit h-fit">press any key</div>
 }

@@ -85,30 +85,10 @@ function Slider(props: {
     );
 }
 
-class Sub {
-    x: number = 432;
-}
-
-class Thing {
-    sub: Sub = createMutable(new Sub());
-    y: number = 65;
-}
-
-function mod(thing: Thing) {
-    const sub = thing.sub;
-    sub.x++;
-}
-
-function modNoRef(thing: Thing) {
-    thing.sub.x++;
-    thing.y++;
-}
-
 export default function Canvas() {
     const app = useContext(appContext)!;
     const editor = app.editor;
     const drawing = app.drawing;
-    const keybinds = app.keybinds;
 
     const [newIsOpen, setNewIsOpen] = createSignal(false);
 
@@ -149,6 +129,9 @@ export default function Canvas() {
     let canvasHeld = false;
     let colorPickerHeld = false;
     let hueSliderHeld = false;
+
+    const abortController = new AbortController;
+    const abortSignal = abortController.signal;
 
     onMount(() => {
         mainCtx = mainCanvas.getContext("2d")!;
@@ -243,7 +226,6 @@ export default function Canvas() {
     })
 
     const keyToAction = (e:KeyboardEvent) => {
-        console.log("keybind listening");
         const action = getKeyAction(e, app.keybinds);
 
         if (action === null) { 
@@ -270,26 +252,23 @@ export default function Canvas() {
         }
     }
 
-    onMount(() => {
-        document.addEventListener("pointermove", canvasOnPointerMove);
-        localRoot.addEventListener("pointermove", colorPickerOnMove);
-        document.addEventListener("pointermove", hueSliderOnMove);
-        document.addEventListener("pointerup", () => {
-            canvasOnPointerUp();
-            colorPickerHeld = false;
-            hueSliderHeld = false;
-        });
-        document.addEventListener("pointerleave", () => {
-            canvasOnPointerUp();
-            colorPickerHeld = false;
-            hueSliderHeld = false;
-        });
-
-        document.addEventListener("keydown", keyToAction);
-    })
+    document.addEventListener("pointermove", canvasOnPointerMove, {signal: abortSignal});
+    document.addEventListener("pointermove", colorPickerOnMove, {signal: abortSignal});
+    document.addEventListener("pointermove", hueSliderOnMove, {signal: abortSignal});
+    document.addEventListener("pointerup", () => {
+        canvasOnPointerUp();
+        colorPickerHeld = false;
+        hueSliderHeld = false;
+    }, {signal: abortSignal});
+    document.addEventListener("pointerleave", () => {
+        canvasOnPointerUp();
+        colorPickerHeld = false;
+        hueSliderHeld = false;
+    }, {signal: abortSignal});
+    document.addEventListener("keydown", keyToAction, {signal: abortSignal});
 
     onCleanup(() => {
-        document.removeEventListener("keydown", keyToAction);
+        abortController.abort();
     })
 
     return (
