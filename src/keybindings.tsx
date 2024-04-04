@@ -66,7 +66,7 @@ function checkMods (e: KeyboardEvent, mods: string[]): boolean {
     return true;
 }
 
-function getKeyAction(e: KeyboardEvent, keybinds: Keybind[]): Action | null {
+export function getKeyAction(e: KeyboardEvent, keybinds: Keybind[]): Action | null {
     const potentialMatches: {action: Action, mod?: string[]}[] = [];
     for (let i = 0; i < keybinds.length; i++) {
         const kb = keybinds[i];

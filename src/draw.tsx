@@ -1,5 +1,13 @@
 import { createMutable } from "solid-js/store";
 import { HSV, RGB, hsvToRGB, offsetPos } from "./color";
+import { Keybind } from "./keybindings";
+
+
+export type App = {
+    editor: Editor
+    drawing: Drawing
+    keybinds: Keybind[]
+}
 
 export enum Tool {
     Pan,

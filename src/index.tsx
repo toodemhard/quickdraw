@@ -5,19 +5,22 @@ import Config from "./pages/Config";
 import { createMutable } from "solid-js/store";
 import { defaultKeybindings } from "./keybindings";
 import { createContext } from "solid-js";
+import { App, Drawing, Editor } from "./draw";
 
 
-export type State = {
-    x: number
-}
-export const context = createContext<State>();
+export const appContext = createContext<App>();
 
-function App(props: RouteSectionProps) {
-    // const keybinds = createMutable(defaultKeybindings());
-
+function Root(props: RouteSectionProps) {
+    const value = createMutable<App>({
+        editor: createMutable(new Editor),
+        drawing: createMutable(new Drawing(800, 600)),
+        keybinds: defaultKeybindings()
+        });
 
     return (
-    <context.Provider value={{x:312}}> {props.children} </context.Provider>
+    <>
+        <appContext.Provider value={value}> {props.children} </appContext.Provider>
+    </>
     );
 
 }
@@ -25,7 +28,7 @@ function App(props: RouteSectionProps) {
 function main() {
     render(
         () => (
-        <Router root={App}>
+        <Router root={Root}>
             <Route path="/" component={Canvas}/>
             <Route path="/config" component={Config}/>
         </Router>

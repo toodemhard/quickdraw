@@ -1,25 +1,54 @@
-import { For, Index, JSXElement, createEffect, createSignal, onMount, useContext } from "solid-js";
+import {
+    For,
+    Index,
+    JSXElement,
+    createEffect,
+    createSignal,
+    onCleanup,
+    onMount,
+    useContext,
+} from "solid-js";
 import type { JSX } from "solid-js";
 
-import { CanvasCtx, Drawing, Editor, Tool, onPointerDown, onPointerHeld, onPointerUp } from "../draw";
+import {
+    CanvasCtx,
+    Drawing,
+    Editor,
+    Tool,
+    onPointerDown,
+    onPointerHeld,
+    onPointerUp,
+    onRedo,
+    onUndo,
+    rebuild,
+} from "../draw";
 import { HSV, clamp, hsvToRGB } from "../color";
 import { createMutable, createStore } from "solid-js/store";
 import { A } from "@solidjs/router";
-import { Keybind } from "../keybindings";
-import { context } from "..";
+import { Action, Keybind, getKeyAction } from "../keybindings";
+import { appContext } from "..";
 
-function Slider(props: { value: number, max: number, onInput: (value: number)=>void}) {
+function Slider(props: {
+    value: number;
+    max: number;
+    onInput: (value: number) => void;
+}) {
     let slider!: HTMLDivElement;
     let held = false;
 
     const onPointerDown = (e: PointerEvent) => {
         held = true;
-        onMove(e)
-    }
+        onMove(e);
+    };
 
-    const onMove = (e:PointerEvent) => {
+    const onMove = (e: PointerEvent) => {
         const rect = slider.getBoundingClientRect();
-        props.onInput(Math.round(clamp((e.clientX - rect.x) / slider.clientWidth, 0, 1) * props.max));
+        props.onInput(
+            Math.round(
+                clamp((e.clientX - rect.x) / slider.clientWidth, 0, 1) *
+                    props.max,
+            ),
+        );
     };
 
     document.addEventListener("pointermove", (e: PointerEvent) => {
@@ -27,15 +56,29 @@ function Slider(props: { value: number, max: number, onInput: (value: number)=>v
             return;
         }
         onMove(e);
-    })
+    });
 
-    document.addEventListener("pointerup", () => {held = false;})
-    document.addEventListener("pointerleave", () => {held = false;})
+    document.addEventListener("pointerup", () => {
+        held = false;
+    });
+    document.addEventListener("pointerleave", () => {
+        held = false;
+    });
 
     return (
-        <div ref={slider} onPointerDown={onPointerDown} class="bg-bg1 relative h-7 w-full bg-neutral-800 rounded-md overflow-hidden">
-            <div style={{width: `${props.value / props.max * 100}%`}} class="h-full w-3/5 bg-blue-700"></div>
-            <span id="slider-value" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div
+            ref={slider}
+            onPointerDown={onPointerDown}
+            class="bg-bg1 relative h-7 w-full overflow-hidden rounded-md bg-neutral-800"
+        >
+            <div
+                style={{ width: `${(props.value / props.max) * 100}%` }}
+                class="h-full w-3/5 bg-blue-700"
+            ></div>
+            <span
+                id="slider-value"
+                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            >
                 {props.value} px
             </span>
         </div>
@@ -46,9 +89,8 @@ class Sub {
     x: number = 432;
 }
 
-
 class Thing {
-    sub: Sub = createMutable(new Sub);
+    sub: Sub = createMutable(new Sub());
     y: number = 65;
 }
 
@@ -63,26 +105,12 @@ function modNoRef(thing: Thing) {
 }
 
 export default function Canvas() {
-    const editor = createMutable(new Editor);
-    const drawing = createMutable(new Drawing(800, 600));
+    const app = useContext(appContext)!;
+    const editor = app.editor;
+    const drawing = app.drawing;
+    const keybinds = app.keybinds;
 
     const [newIsOpen, setNewIsOpen] = createSignal(false);
-
-    const thing = createMutable(
-        new Thing
-    )
-
-    document.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "f") {
-            mod(thing);
-        }
-        if (e.key=== "g") {
-            modNoRef(thing);
-            console.log(thing.sub.x);
-        }
-    })
-
-    useContext(context);
 
     const tools: string[] = [];
     for (const tool in Tool) {
@@ -94,16 +122,18 @@ export default function Canvas() {
     }
     const [idk] = createSignal(tools);
 
-
     const canvasTransform = () => {
         return `
         translate(${-drawing.width / 2}px, ${-drawing.height / 2}px)
         scale(${drawing.canvasScale})
-        translate(${drawing.canvasPos.x }px, ${drawing.canvasPos.y}px)
-        `
-    }
+        translate(${drawing.canvasPos.x}px, ${drawing.canvasPos.y}px)
+        `;
+    };
     const rgb = () => hsvToRGB(editor.hsv).toString();
-    const hueRGB = () => hsvToRGB({h: editor.hsv.h, s:255, v:255}).toString();
+    const hueRGB = () =>
+        hsvToRGB({ h: editor.hsv.h, s: 255, v: 255 }).toString();
+
+    let localRoot!: HTMLDivElement;
 
     let colorPicker!: HTMLDivElement;
     let hueSlider!: HTMLDivElement;
@@ -114,25 +144,25 @@ export default function Canvas() {
     let mainCtx!: CanvasRenderingContext2D;
     let tempCtx!: CanvasRenderingContext2D;
 
-    let ctx: CanvasCtx
+    let ctx: CanvasCtx;
 
     let canvasHeld = false;
     let colorPickerHeld = false;
     let hueSliderHeld = false;
 
-
     onMount(() => {
         mainCtx = mainCanvas.getContext("2d")!;
         tempCtx = tempCanvas.getContext("2d")!;
 
-        ctx = {main: mainCanvas, temp: tempCanvas, mainCtx: mainCtx, tempCtx: tempCtx};
-    })
+        ctx = {
+            main: mainCanvas,
+            temp: tempCanvas,
+            mainCtx: mainCtx,
+            tempCtx: tempCtx,
+        };
 
-    createEffect(() => {
-        // console.log(drawing.canvasPos.x);
-        // console.log(rgb());
+        rebuild(drawing, ctx.mainCtx);
     });
-
 
     const colorPickerOnMove = (e: PointerEvent) => {
         if (!colorPickerHeld) {
@@ -140,20 +170,18 @@ export default function Canvas() {
         }
 
         const rect = colorPicker.getBoundingClientRect();
-        
 
         const x = clamp((e.x - rect.left) / colorPicker.clientWidth, 0, 1);
         const y = clamp(1 - (e.y - rect.top) / colorPicker.clientHeight, 0, 1);
 
-
         const hsv = editor.hsv;
         hsv.s = x * 255;
         hsv.v = y * 255;
-    }
+    };
 
     const sliderOnInput = (value: number) => {
         editor.brushSize = value;
-    }
+    };
 
     const hueSliderOnMove = (e: PointerEvent) => {
         if (!hueSliderHeld) {
@@ -165,19 +193,23 @@ export default function Canvas() {
         const x = clamp((e.x - rect.left) / hueSlider.clientWidth, 0, 1);
 
         editor.hsv.h = x * 255;
-    }
+    };
 
-
-    const colorPickerOnPointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (e) => {
+    const colorPickerOnPointerDown: JSX.EventHandler<
+        HTMLDivElement,
+        PointerEvent
+    > = (e) => {
         colorPickerHeld = true;
-        colorPickerOnMove(e)
-    }
+        colorPickerOnMove(e);
+    };
 
-
-    const hueSliderOnPointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (e) => {
+    const hueSliderOnPointerDown: JSX.EventHandler<
+        HTMLDivElement,
+        PointerEvent
+    > = (e) => {
         hueSliderHeld = true;
-        hueSliderOnMove(e)
-    }
+        hueSliderOnMove(e);
+    };
 
     const canvasOnPointerMove = (e: PointerEvent) => {
         if (!canvasHeld) {
@@ -185,61 +217,117 @@ export default function Canvas() {
         }
 
         onPointerHeld(editor, drawing, e, ctx);
-    }
+    };
 
-    const canvasOnPointerDown: JSX.EventHandler<HTMLDivElement, PointerEvent> = (e) => {
+    const canvasOnPointerDown: JSX.EventHandler<
+        HTMLDivElement,
+        PointerEvent
+    > = (e) => {
         canvasHeld = true;
         onPointerDown(editor);
         canvasOnPointerMove(e);
-    }
+    };
 
     const canvasOnPointerUp = () => {
         canvasHeld = false;
         onPointerUp(editor, drawing, ctx);
-    }
+    };
 
     const selectTool = (i: number) => {
-        editor.selectedTool = i
+        editor.selectedTool = i;
+    };
+
+
+    drawing.historyEvent.subscribe(() => {
+        rebuild(drawing, ctx.mainCtx);
+    })
+
+    const keyToAction = (e:KeyboardEvent) => {
+        console.log("keybind listening");
+        const action = getKeyAction(e, app.keybinds);
+
+        if (action === null) { 
+            return;
+        }
+
+        switch (action) {
+            case Action.zoomIn:
+                break;
+            case Action.zoomOut:
+                break;
+            case Action.undo:
+                onUndo(drawing);
+                break;
+            case Action.redo:
+                onRedo(drawing);
+                break;
+            case Action.decreaseBrushSize:
+                editor.brushSize -= 10;
+                break;
+            case Action.increaseBrushSize: 
+                editor.brushSize += 10;
+                break;
+        }
     }
 
-    document.addEventListener("pointermove", canvasOnPointerMove);
-    document.addEventListener("pointermove", colorPickerOnMove);
-    document.addEventListener("pointermove", hueSliderOnMove);
-    document.addEventListener("pointerup", () => {
-        canvasOnPointerUp();
-        colorPickerHeld = false;
-        hueSliderHeld = false;
-    });
-    document.addEventListener("pointerleave", () => {
-        canvasOnPointerUp();
-        colorPickerHeld = false
-        hueSliderHeld = false;
-    });
+    onMount(() => {
+        document.addEventListener("pointermove", canvasOnPointerMove);
+        localRoot.addEventListener("pointermove", colorPickerOnMove);
+        document.addEventListener("pointermove", hueSliderOnMove);
+        document.addEventListener("pointerup", () => {
+            canvasOnPointerUp();
+            colorPickerHeld = false;
+            hueSliderHeld = false;
+        });
+        document.addEventListener("pointerleave", () => {
+            canvasOnPointerUp();
+            colorPickerHeld = false;
+            hueSliderHeld = false;
+        });
+
+        document.addEventListener("keydown", keyToAction);
+    })
+
+    onCleanup(() => {
+        document.removeEventListener("keydown", keyToAction);
+    })
 
     return (
-        <div class="flex h-screen flex-col">
+        <div ref={localRoot} class="flex h-screen flex-col">
             <div class="flex w-full gap-2 p-2">
                 <button
-                onClick={() => setNewIsOpen(!newIsOpen())}
-                class="text-2xl">
+                    onClick={() => setNewIsOpen(!newIsOpen())}
+                    class="text-2xl"
+                >
                     New
                 </button>
                 <button class="text-2xl">Save</button>
                 <button class="text-2xl">Open</button>
                 <button class="text-2xl">Export</button>
-                <A href="/config" class="text-2xl text-neutral-400 hover:text-white">Config</A>
+                <A
+                    href="/config"
+                    class="text-2xl text-neutral-400 hover:text-white"
+                >
+                    Config
+                </A>
+                <A
+                    href="/test"
+                    class="text-2xl text-neutral-400 hover:text-white"
+                >
+                    Test
+                </A>
             </div>
 
             <div class="flex flex-1">
                 <div
-                onPointerDown={canvasOnPointerDown}
+                    onPointerDown={canvasOnPointerDown}
                     id="canvas-field"
-                    class="bg-bg2 relative w-full cursor-cell overflow-hidden h-full"
+                    class="bg-bg2 relative h-full w-full cursor-cell overflow-hidden"
                 >
                     <div
-                        style={{transform: canvasTransform()}}
+                        style={{ transform: canvasTransform() }}
                         id="canvas-stack"
-                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 box-content h-[600px] w-[800px] border-[2px] border-red-600"
+                        class="absolute left-1/2 top-1/2 box-content h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 border-[2px] border-red-600"
                     >
                         <canvas
                             ref={mainCanvas}
@@ -256,14 +344,16 @@ export default function Canvas() {
                     </div>
 
                     <div>{editor.hsv.h}</div>
-                    <div>{drawing.canvasPos.x} {drawing.canvasPos.y}</div>
+                    <div>
+                        {drawing.canvasPos.x} {drawing.canvasPos.y}
+                    </div>
                     <div>{rgb()}</div>
                 </div>
                 <div class="right-0 h-full select-none p-9">
                     <div class="flex flex-col gap-3.5">
                         <div
                             id="output"
-                            style={{"background-color": rgb()}}
+                            style={{ "background-color": rgb() }}
                             class="h-8 rounded-md"
                             draggable="false"
                         ></div>
@@ -275,7 +365,7 @@ export default function Canvas() {
                         >
                             <div
                                 id="hue"
-                                style={{"background-color": hueRGB()}}
+                                style={{ "background-color": hueRGB() }}
                                 class="absolute h-full w-full rounded-md"
                             ></div>
                             <div
@@ -288,9 +378,9 @@ export default function Canvas() {
                             ></div>
                             <div
                                 style={{
-                                    "left": `${editor.hsv.s / 255 * 100}%`,
-                                    "bottom": `${editor.hsv.v / 255 * 100}%`,
-                                    }}
+                                    left: `${(editor.hsv.s / 255) * 100}%`,
+                                    bottom: `${(editor.hsv.v / 255) * 100}%`,
+                                }}
                                 id="pointer"
                                 class="absolute z-20 h-4 w-4 -translate-x-1/2 translate-y-1/2 select-none rounded-full border-2 border-white"
                             ></div>
@@ -302,26 +392,39 @@ export default function Canvas() {
                             class="relative z-0 my-2 h-8 w-72 rounded-md"
                         >
                             <div
-                                style={{left: `${editor.hsv.h / 255 * 100}%`}}
+                                style={{
+                                    left: `${(editor.hsv.h / 255) * 100}%`,
+                                }}
                                 id="hue-window"
                                 class="absolute top-1/2 z-10 h-12 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-white"
                             ></div>
                         </div>
 
-                        <Slider value={editor.brushSize} max={150} onInput={sliderOnInput} />
+                        <Slider
+                            value={editor.brushSize}
+                            max={150}
+                            onInput={sliderOnInput}
+                        />
 
                         <div class="flex w-72 flex-wrap">
                             <Index each={idk()}>
                                 {(item, index) => (
-                                <button
-                                onClick={() => {selectTool(index)}}
-                                class="rounded-md p-2 m-2"
-                                classList={{
-                                    "bg-neutral-800": index !== editor.selectedTool,
-                                    "bg-white": index === editor.selectedTool,
-                                    "text-primary-0": index === editor.selectedTool,
-                                }}
-                                >{item()}</button>
+                                    <button
+                                        onClick={() => {
+                                            selectTool(index);
+                                        }}
+                                        class="m-2 rounded-md p-2"
+                                        classList={{
+                                            "bg-neutral-800":
+                                                index !== editor.selectedTool,
+                                            "bg-white":
+                                                index === editor.selectedTool,
+                                            "text-primary-0":
+                                                index === editor.selectedTool,
+                                        }}
+                                    >
+                                        {item()}
+                                    </button>
                                 )}
                             </Index>
                         </div>
@@ -330,9 +433,9 @@ export default function Canvas() {
             </div>
 
             <div
-                style={{visibility: newIsOpen() ? "visible": "hidden"}}
+                style={{ visibility: newIsOpen() ? "visible" : "hidden" }}
                 id="create-canvas-popup"
-                class="bg-primary-1 invisible absolute bottom-0 left-0 right-0 top-0 m-auto h-fit w-fit p-8 rounded-lg"
+                class="invisible absolute bottom-0 left-0 right-0 top-0 m-auto h-fit w-fit rounded-lg bg-primary-1 p-8"
             >
                 <div>
                     <span>width:</span>{" "}
@@ -345,9 +448,7 @@ export default function Canvas() {
                     <span>px</span>
                 </div>
 
-                <button
-                    class="text-primary-0 rounded-full mx-auto bg-white p-2 px-4 text-xl font-bold"
-                >
+                <button class="mx-auto rounded-full bg-white p-2 px-4 text-xl font-bold text-primary-0">
                     Create
                 </button>
             </div>
