@@ -1,11 +1,17 @@
+import { createMutable } from "solid-js/store";
 import { HSV, RGB, hsvToRGB, offsetPos } from "./color";
+import { Keybind } from "./keybindings";
+
+
+export type App = {
+    editor: Editor
+    drawing: Drawing
+    keybinds: Keybind[]
+}
 
 export enum Tool {
-    Round,
     Pan,
-    Line,
     Square,
-    Pick,
     Zoom,
 }
 
@@ -195,7 +201,7 @@ export class Drawing {
     height: number = 600;
     history: Stroke[] = [];
     historyPos: number = -1;
-    canvasPos: Vec2 = new Vec2(0, 0);
+    canvasPos: Vec2 = createMutable(new Vec2(0, 0));
     canvasScale: number = 1;
 
     historyEvent: Event = new Event;
@@ -209,7 +215,7 @@ export class Drawing {
 
 export class Editor {
     selectedTool: Tool = Tool.Square;
-    brushScale: number = 50;
+    brushSize: number = 50;
     hsv: HSV = {h:0,s:255,v:255};
 
     stroke: Stroke = new Stroke(0, new RGB(0,0,0))
@@ -253,7 +259,7 @@ export function onPointerDown(editor: Editor) {
         case Tool.Pan:
             break;
         case Tool.Square:
-            editor.stroke = new Stroke(editor.brushScale, hsvToRGB(editor.hsv));
+            editor.stroke = new Stroke(editor.brushSize, hsvToRGB(editor.hsv));
         break;
     }
 }
