@@ -4,13 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently npm:watch-*",
+    "watch-go": "air",
+    "watch-vite": "vite",
+    "watch-tailwind": "tailwindcss --watch -i static/input.css -o static/output.css",
+
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "style": "tailwindcss --watch -i static/input.css -o static/output.css",
     "format": "prettier src/**/*.tsx --write"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
