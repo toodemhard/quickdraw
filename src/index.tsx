@@ -29,7 +29,7 @@ function main() {
     render(
         () => (
         <Router root={Root}>
-            <Route path="/" component={Canvas}/>
+            <Route path="/quickdraw" component={Canvas}/>
             <Route path="/config" component={Config}/>
         </Router>
         ),
