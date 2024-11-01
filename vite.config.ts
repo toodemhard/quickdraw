@@ -9,6 +9,5 @@ export default defineConfig({
                 target: "http://localhost:8080"
             }
         }
-    },
-    base: "https://toodemhard.github.io/quickdraw/"
+    }
 });
