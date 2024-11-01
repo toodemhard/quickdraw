@@ -9,7 +9,7 @@
     "watch-vite": "vite",
     "watch-tailwind": "tailwindcss --watch -i static/input.css -o static/output.css",
 
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && tailwindcss -i static/input.css -o dist/static/output.css",
     "preview": "vite preview",
     "format": "prettier src/**/*.tsx --write"
   },
