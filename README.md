@@ -9,7 +9,7 @@ Requires ```node``` and ```go```.
 git clone https://github.com/toodemhard/quickdraw.git
 cd quickdraw
 npm i
-npm build
+npm run build
 go run main.go
 ```
 
