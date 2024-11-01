@@ -1,5 +1,5 @@
 # Quickdraw
-A minimalist painting program. ~[Currently hosted here](https://quickdraw-7yz2lteznq-nw.a.run.app)~ (GCP free trial expired :( ).
+A minimalist painting program. [Currently hosted here](https://toodemhard.github.io/quickdraw/)
 
 ![image](https://github.com/lailokkei/quickdraw/assets/100080774/4120894b-8b49-4793-8747-24a733eabafa)
 
