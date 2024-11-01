@@ -226,7 +226,9 @@ export default function Canvas() {
     })
 
     const keyToAction = (e:KeyboardEvent) => {
+        console.log("asldkfjh");
         const action = getKeyAction(e, app.keybinds);
+        console.log(action);
 
         if (action === null) { 
             return;
@@ -249,6 +251,15 @@ export default function Canvas() {
             case Action.increaseBrushSize: 
                 editor.brushSize += 10;
                 break;
+            case Action.pan:
+                selectTool(Tool.Pan);
+                break;
+            case Action.squareBrush:
+                selectTool(Tool.Square);
+                break;
+            case Action.zoom:
+                selectTool(Tool.Zoom);
+                break;
         }
     }
 
@@ -267,6 +278,10 @@ export default function Canvas() {
     }, {signal: abortSignal});
     document.addEventListener("keydown", keyToAction, {signal: abortSignal});
 
+    // document.addEventListener("keydown", (e:KeyboardEvent) => {
+    //     console.log("aksdfkjlh")
+    // });
+
     onCleanup(() => {
         abortController.abort();
     })
@@ -275,39 +290,43 @@ export default function Canvas() {
         <div ref={localRoot} class="flex h-screen flex-col">
             <div class="flex w-full gap-2 p-2">
                 <button
-                    onClick={() => setNewIsOpen(!newIsOpen())}
-                    class="text-2xl"
+                    // onClick={() => setNewIsOpen(!newIsOpen())}
+                    class="text-2xl text-neutral-400"
                 >
                     New
                 </button>
-                <button class="text-2xl">Save</button>
-                <button class="text-2xl">Open</button>
-                <button class="text-2xl">Export</button>
+                <button class="text-2xl text-neutral-400">Save</button>
+                <button class="text-2xl text-neutral-400">Open</button>
+                <button class="text-2xl text-neutral-400">Export</button>
                 <A
                     href="/config"
-                    class="text-2xl text-neutral-400 hover:text-white"
+                    class="text-2xl"
                 >
                     Config
                 </A>
-                <A
+                {/* <A
                     href="/test"
                     class="text-2xl text-neutral-400 hover:text-white"
                 >
                     Test
-                </A>
+                </A> */}
             </div>
 
             <div class="flex flex-1">
                 <div
                     onPointerDown={canvasOnPointerDown}
                     id="canvas-field"
-                    class="bg-bg2 relative h-full w-full cursor-cell overflow-hidden"
+                    class="bg-bg2 relative h-full w-full cursor-crosshair overflow-hidden"
                 >
                     <div
                         style={{ transform: canvasTransform() }}
                         id="canvas-stack"
-                        class="absolute left-1/2 top-1/2 box-content h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 border-[2px] border-red-600"
+                        class="absolute left-1/2 top-1/2 box-content h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2"
                     >
+                        <div
+                        class="absolute w-full h-full border-[2px] border-neutral-600"
+                        >
+                        </div>
                         <canvas
                             ref={mainCanvas}
                             width={drawing.width}
@@ -322,11 +341,11 @@ export default function Canvas() {
                         ></canvas>
                     </div>
 
-                    <div>{editor.hsv.h}</div>
+                    {/* <div>{editor.hsv.h}</div>
                     <div>
                         {drawing.canvasPos.x} {drawing.canvasPos.y}
                     </div>
-                    <div>{rgb()}</div>
+                    <div>{rgb()}</div> */}
                 </div>
                 <div class="right-0 h-full select-none p-9">
                     <div class="flex flex-col gap-3.5">

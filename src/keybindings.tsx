@@ -12,6 +12,7 @@ export enum Action {
     increaseBrushSize,
     squareBrush,
     pan,
+    zoom,
 }
 
 export type Keybind = {
@@ -45,12 +46,17 @@ export function defaultKeybindings() : Keybind[] {
         {
             name: "Square Brush",
             action: Action.squareBrush,
-            keys: [{key: "k"}, {key: "j"}],
+            keys: [{key: "f"}, {key: "j"}],
         },
         {
             name: "Pan",
             action: Action.pan,
-            keys: [{key: "c"}, {key: "n"}]
+            keys: [{key: "d"}, {key: "k"}]
+        },
+        {
+            name: "Zoom",
+            action: Action.zoom,
+            keys: [{key: "s"}, {key: "l"}]
         },
     ]
 }

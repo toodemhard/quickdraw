@@ -10,8 +10,8 @@ export type App = {
 }
 
 export enum Tool {
-    Pan,
     Square,
+    Pan,
     Zoom,
 }
 
@@ -250,7 +250,7 @@ export function onRedo(drawing: Drawing) {
 
 export function onZoom(drawing: Drawing, amount: number) {
     const currentScale = drawing.canvasScale;
-    drawing.canvasScale = currentScale + (currentScale * amount) / 100;
+    drawing.canvasScale = max(0.3, currentScale + (currentScale * amount) / 100);
     drawing.canvasMoveEvent.invoke();
 }
 
