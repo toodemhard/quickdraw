@@ -299,7 +299,7 @@ export default function Canvas() {
                 <button class="text-2xl text-neutral-400">Open</button>
                 <button class="text-2xl text-neutral-400">Export</button>
                 <A
-                    href="/config"
+                    href={basePath + "/config"}
                     class="text-2xl"
                 >
                     Config
