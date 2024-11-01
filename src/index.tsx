@@ -7,6 +7,8 @@ import { defaultKeybindings } from "./keybindings";
 import { createContext } from "solid-js";
 import { App, Drawing, Editor } from "./draw";
 
+import {basePath} from "./base_path"
+
 
 export const appContext = createContext<App>();
 

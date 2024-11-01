@@ -22,7 +22,7 @@ func main() {
 	// e.POST("/api/drawing", func(c echo.Context) error {
 	// })
 
-	e.Static("/", "dist")
+	e.Static("/quickdraw/", "docs")
 
 	e.Logger.Fatal(e.Start(":" + port))
 

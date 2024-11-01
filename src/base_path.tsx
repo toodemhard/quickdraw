@@ -1,1 +1,1 @@
-const basePath = "/quickdraw"
+export const basePath = "/quickdraw"

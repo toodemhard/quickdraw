@@ -27,6 +27,7 @@ import { createMutable, createStore } from "solid-js/store";
 import { A } from "@solidjs/router";
 import { Action, Keybind, getKeyAction } from "../keybindings";
 import { appContext } from "..";
+import { basePath } from "../base_path";
 
 function Slider(props: {
     value: number;
@@ -226,9 +227,7 @@ export default function Canvas() {
     })
 
     const keyToAction = (e:KeyboardEvent) => {
-        console.log("asldkfjh");
         const action = getKeyAction(e, app.keybinds);
-        console.log(action);
 
         if (action === null) { 
             return;
