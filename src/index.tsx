@@ -10,6 +10,8 @@ import { App, Drawing, Editor } from "./draw";
 
 export const appContext = createContext<App>();
 
+const rootUrl = "/quickdraw"
+
 function Root(props: RouteSectionProps) {
     const value = createMutable<App>({
         editor: createMutable(new Editor),
@@ -29,8 +31,8 @@ function main() {
     render(
         () => (
         <Router root={Root}>
-            <Route path="/quickdraw" component={Canvas}/>
-            <Route path="/config" component={Config}/>
+            <Route path={rootUrl+"/"} component={Canvas}/>
+            <Route path={rootUrl+"/config"} component={Config}/>
         </Router>
         ),
         document.getElementById("root")!
