@@ -285,30 +285,40 @@ export default function Canvas() {
         abortController.abort();
     })
 
+    const exportHandler: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
+        console.log("export!");
+        const imageUrl = mainCanvas.toDataURL("image/png");
+        const newWindow = window.open();
+        if (newWindow) {
+            newWindow.document.write(`<img src=${imageUrl} />`);
+            newWindow.document.body.style.backgroundColor = "#0f0f0f";
+        }
+    };
+
     return (
         <div ref={localRoot} class="flex h-screen flex-col">
-            <div class="flex w-full gap-2 p-2">
+            <div class="flex w-full p-2">
                 <button
                     // onClick={() => setNewIsOpen(!newIsOpen())}
-                    class="text-2xl text-neutral-400"
+                    class="text-2xl hover:bg-neutral-800 px-2 py-1"
                 >
                     New
                 </button>
-                <button class="text-2xl text-neutral-400">Save</button>
-                <button class="text-2xl text-neutral-400">Open</button>
-                <button class="text-2xl text-neutral-400">Export</button>
+                <button 
+                    class="text-2xl hover:bg-neutral-800 px-2 py-1"
+                >Save</button>
+                <button 
+                    class="text-2xl hover:bg-neutral-800 px-2 py-1"
+                >Open</button>
+                <button 
+                    class="text-2xl hover:bg-neutral-800 px-2 py-1"
+                onClick={exportHandler} >Export</button>
                 <A
                     href={basePath + "/config"}
-                    class="text-2xl"
+                    class="text-2xl hover:bg-neutral-800 px-2 py-1"
                 >
                     Config
                 </A>
-                {/* <A
-                    href="/test"
-                    class="text-2xl text-neutral-400 hover:text-white"
-                >
-                    Test
-                </A> */}
             </div>
 
             <div class="flex flex-1">
@@ -347,7 +357,7 @@ export default function Canvas() {
                     <div>{rgb()}</div> */}
                 </div>
                 <div class="right-0 h-full select-none p-9">
-                    <div class="flex flex-col gap-3.5">
+                    <div class="flex flex-col gap-4">
                         <div
                             id="output"
                             style={{ "background-color": rgb() }}
@@ -403,14 +413,14 @@ export default function Canvas() {
                             onInput={sliderOnInput}
                         />
 
-                        <div class="flex w-72 flex-wrap">
+                        <div class="flex gap-4 w-72 flex-wrap">
                             <Index each={idk()}>
                                 {(item, index) => (
                                     <button
                                         onClick={() => {
                                             selectTool(index);
                                         }}
-                                        class="m-2 rounded-md p-2"
+                                        class="rounded-md py-1 px-2"
                                         classList={{
                                             "bg-neutral-800":
                                                 index !== editor.selectedTool,
