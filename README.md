@@ -1,6 +1,8 @@
 # Quickdraw
 A minimalist painting program. [Currently hosted here](https://toodemhard.github.io/quickdraw/)
 
+![screenshot](https://github.com/user-attachments/assets/4848e4b2-a438-480d-a49c-3caf75ec7634)
+
 ![image](https://github.com/lailokkei/quickdraw/assets/100080774/4120894b-8b49-4793-8747-24a733eabafa)
 
 ## Local Usage
