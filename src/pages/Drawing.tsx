@@ -208,7 +208,7 @@ export default function Canvas() {
         PointerEvent
     > = (e) => {
         canvasHeld = true;
-        onPointerDown(editor);
+        onPointerDown(editor, e);
         canvasOnPointerMove(e);
     };
 

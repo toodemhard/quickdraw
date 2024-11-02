@@ -254,12 +254,16 @@ export function onZoom(drawing: Drawing, amount: number) {
     drawing.canvasMoveEvent.invoke();
 }
 
-export function onPointerDown(editor: Editor) {
+let lastPos : Vec2 = new Vec2(0,0);
+
+export function onPointerDown(editor: Editor, e: PointerEvent) {
+    lastPos = new Vec2(e.clientX, e.clientY);
     switch (editor.selectedTool) {
         case Tool.Pan:
             break;
         case Tool.Square:
             editor.stroke = new Stroke(editor.brushSize, hsvToRGB(editor.hsv));
+            console.log(editor.stroke.color);
         break;
     }
 }
@@ -269,13 +273,16 @@ export function onPointerHeld(editor: Editor, drawing: Drawing, e: PointerEvent,
 
     switch (editor.selectedTool) {
         case Tool.Zoom:
-            onZoom(drawing, e.movementY);
+            onZoom(drawing, e.clientY - lastPos.y);
             break;
         case Tool.Pan:
+            console.log(e.movementX, e.movementY);
+            const pointerMove = vecSub(new Vec2(e.clientX, e.clientY), lastPos);
+
             let newPos = drawing.canvasPos;
             const factor = 1 / drawing.canvasScale;
-            newPos.x += e.movementX * factor;
-            newPos.y += e.movementY * factor;
+            newPos.x += pointerMove.x * factor;
+            newPos.y += pointerMove.y * factor;
             drawing.canvasPos = newPos;
             drawing.canvasMoveEvent.invoke();
             break;
@@ -297,6 +304,8 @@ export function onPointerHeld(editor: Editor, drawing: Drawing, e: PointerEvent,
 
             break;
     }
+
+    lastPos = new Vec2(e.clientX, e.clientY);
 }
 
 export function onPointerUp(editor: Editor, drawing:Drawing, ctx: CanvasCtx) {
