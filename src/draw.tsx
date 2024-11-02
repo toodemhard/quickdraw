@@ -308,6 +308,9 @@ export function onPointerUp(editor: Editor, drawing:Drawing, ctx: CanvasCtx) {
         return;
     }
 
+    if (editor.stroke.points.length <= 0) {
+        return;
+    }
     while (drawing.historyPos < drawing.history.length - 1) {
         drawing.history.pop();
     }
@@ -317,4 +320,5 @@ export function onPointerUp(editor: Editor, drawing:Drawing, ctx: CanvasCtx) {
     drawing.historyPos++;
     ctx.mainCtx.drawImage(ctx.temp, 0, 0);
     ctx.tempCtx.clearRect(0, 0, drawing.width, drawing.height);
+    editor.stroke = new Stroke(0, new RGB(0,0,0));
 }
