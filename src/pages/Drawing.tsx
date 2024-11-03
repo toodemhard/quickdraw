@@ -226,6 +226,10 @@ export default function Canvas() {
         rebuild(drawing, ctx.mainCtx);
     })
 
+    const setBrushSize = (size: number) => {
+        editor.brushSize = Math.max(size, 0);
+    }
+
     const keyToAction = (e:KeyboardEvent) => {
         const action = getKeyAction(e, app.keybinds);
 
@@ -245,10 +249,10 @@ export default function Canvas() {
                 onRedo(drawing);
                 break;
             case Action.decreaseBrushSize:
-                editor.brushSize -= 10;
+                setBrushSize(editor.brushSize - 5);
                 break;
             case Action.increaseBrushSize: 
-                editor.brushSize += 10;
+                setBrushSize(editor.brushSize + 5);
                 break;
             case Action.pan:
                 selectTool(Tool.Pan);
@@ -285,7 +289,7 @@ export default function Canvas() {
         abortController.abort();
     })
 
-    const exportHandler: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
+    const exportHandler: JSX.EventHandler<HTMLButtonElement, MouseEvent> = () => {
         console.log("export!");
         const imageUrl = mainCanvas.toDataURL("image/png");
         const newWindow = window.open();
